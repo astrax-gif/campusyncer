@@ -1,151 +1,223 @@
+[README (8).md](https://github.com/user-attachments/files/34875971/README.8.md)
 <div align="center">
 
-![UE Portal](https://capsule-render.vercel.app/api?type=waving&color=0:0a0e27,50:1a237e,100:283593&height=220&section=header&text=UE%20Portal&fontSize=64&fontColor=ffffff&animation=fadeIn&fontAlignY=38&desc=Smart%20Workspace%20%26%20Tenant%20Portal%20%E2%80%94%20Dubai%20World%20Trade%20Centre&descSize=18&descAlignY=60)
+![Header](https://capsule-render.vercel.app/api?type=waving&color=CC0000&height=220&section=header&text=UE%20Campus%20Portal&fontSize=52&fontColor=ffffff&animation=fadeIn&desc=Smart%20Classroom%20Availability%20%26%20Indoor%20Navigation&descSize=18&descAlignY=75)
 
-[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=20&pause=1200&color=4FC3F7&center=true&vCenter=true&width=760&lines=Multi-tenant+client+portal+%26+reception+kiosk;Interactive+SVG+floor+plans+with+live+desk+booking;AI+concierge+chat+for+Wi-Fi%2C+rooms+%26+facilities;One-click+brand+switching+per+business)](https://github.com/astrax-gif/Ue-portal)
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&size=20&pause=1000&color=CC0000&center=true&vCenter=true&width=600&lines=Find+your+classroom+in+seconds;Live+timetable+%E2%80%94+no+more+guessing;Indoor+navigation+via+QR+code;Built+for+UE+Dubai+students+%26+staff)](https://git.io/typing-svg)
 
-![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
-![Tailwind](https://img.shields.io/badge/Tailwind-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
-![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+<br/>
 
-![Vultr](https://img.shields.io/badge/Deployed_on-Vultr-007BFC?style=flat-square&logo=vultr&logoColor=white)
-![Nginx](https://img.shields.io/badge/Served_by-Nginx-009639?style=flat-square&logo=nginx&logoColor=white)
-![GitHub Actions](https://img.shields.io/badge/CI/CD-GitHub_Actions-2088FF?style=flat-square&logo=github-actions&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
+![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?style=for-the-badge&logo=node.js&logoColor=white)
+![Express](https://img.shields.io/badge/Express-4.x-000000?style=for-the-badge&logo=express&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
+![Deployed on Vultr](https://img.shields.io/badge/Deployed%20on-Vultr-007BFC?style=for-the-badge&logo=vultr&logoColor=white)
+
+<br/>
+
+> A smart campus web portal for **University of Europe for Applied Sciences — Dubai**  
+> Check classroom availability, find your class by matric number, and navigate the building — all in one place.
 
 </div>
 
 ---
 
-## ✨ What it does
-
-UE Portal is a **multi-tenant client portal and smart reception kiosk** built for coworking spaces and professional offices at **Dubai World Trade Centre (DWTC)**.
-
-Drop in a URL. Get a branded workspace experience — instantly.
-
----
-
-## 🧩 Features
+## ✨ Features
 
 | Feature | Description |
 |---|---|
-| 🗺️ **Interactive floor plans** | SVG-based maps with selectable desks, suites and meeting rooms |
-| 📅 **Instant booking** | Desk and room booking with confirmation codes |
-| 🎨 **Brand switching** | One-click theme swap — a different look per tenant |
-| 🤖 **AI concierge** | Chat agent for Wi-Fi, room availability, hours, and facility issues |
-| 👤 **Multi-tenant** | Fully isolated workspaces per business |
-| 📲 **Reception kiosk mode** | Full-screen check-in flow for lobbies |
+| 🗓️ **Live Timetable Engine** | Weekly schedule with a live/simulated clock — rooms show as taken or free in real time |
+| 🔍 **Find My Class** | Enter your matriculation number and instantly see your current or next class + room |
+| 🧭 **Indoor Navigation** | "You Are Here" map with `?from=` QR code support for room-to-room directions |
+| 🏫 **Room Details on Click** | Click any occupied room to see course name, professor, and schedule details |
+| 📐 **Smart Capacity Rule** | Rooms with 45+ students automatically suggest merging with Room 2 |
+| 🔎 **Course Search** | Search any course to see if it has started and which room it's in |
+| 🛠️ **Admin Dashboard** | Staff can manage timetables, rooms, and view occupancy at a glance |
+| 💬 **Complaint Box** | Anonymous complaint and feedback submission for students |
+| 🤖 **Campus Chatbot** | AI-powered assistant for campus FAQs and room queries |
 
 ---
 
-## 🏗️ Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     UE Portal Stack                          │
-│                                                             │
-│  ┌──────────┐    ┌──────────┐    ┌────────────────────┐    │
-│  │  React   │───▶│  Vite    │───▶│    Nginx (Vultr)   │    │
-│  │   + TS   │    │  Build   │    │  /var/www/ue-portal │    │
-│  └──────────┘    └──────────┘    └────────────────────┘    │
-│                                            ▲                │
-│  ┌──────────┐    ┌──────────┐             │                │
-│  │ Supabase │    │ Tailwind │   GitHub Actions CI/CD       │
-│  │    DB    │    │   CSS    │   push → build → deploy      │
-│  └──────────┘    └──────────┘                              │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 🚀 Deployment (Vultr)
-
-> **Live on Vultr Cloud Compute.** Auto-deploys on every push to `main`.
-
-### Quick start (local dev)
-
-```bash
-# 1. Clone
-git clone https://github.com/astrax-gif/Ue-portal.git
-cd Ue-portal
-
-# 2. Install
-npm install
-
-# 3. Set environment variables
-cp .env.example .env
-# → fill in your Supabase keys
-
-# 4. Run
-npm run dev
-```
-
-### Deploy to your own Vultr server
-
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for the full step-by-step guide.
-
-**One-time server setup:**
-```bash
-bash scripts/vultr-setup.sh
-```
-
-**After that, every push to `main` auto-deploys via GitHub Actions.**
-
----
-
-## 🔧 Environment variables
-
-```env
-VITE_SUPABASE_URL=https://xxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-```
-
----
-
-## 📁 Project structure
+## 🏗️ Project Structure
 
 ```
 Ue-portal/
-├── src/
-│   ├── components/     # UI components
-│   ├── pages/          # Route pages
-│   ├── lib/            # Supabase client, utils
-│   └── main.tsx
-├── public/
-├── nginx/
-│   └── ue-portal.conf  # Production Nginx config
-├── scripts/
-│   └── vultr-setup.sh  # One-time server setup
-├── .github/
-│   └── workflows/
-│       └── deploy.yml  # CI/CD pipeline
-├── Dockerfile          # Optional Docker deployment
-├── .env.example
-└── DEPLOYMENT.md       # Full deployment guide
+├── frontend/
+│   ├── index.html          # Main portal entry
+│   ├── timetable.html      # Live weekly timetable
+│   ├── find-class.html     # Find My Class (matric number search)
+│   ├── navigation.html     # Indoor navigation map
+│   ├── admin.html          # Admin / staff dashboard
+│   ├── complaint.html      # Complaint box
+│   ├── css/
+│   │   └── style.css
+│   ├── js/
+│   │   ├── timetable.js
+│   │   ├── navigation.js
+│   │   └── chatbot.js
+│   └── assets/
+│       └── rooms/          # Classroom photos (add your own)
+│
+├── backend/
+│   ├── server.js           # Express entry point
+│   ├── routes/
+│   │   ├── timetable.js
+│   │   ├── rooms.js
+│   │   └── complaints.js
+│   └── data/
+│       └── timetable.json  # Timetable seed data
+│
+└── README.md
 ```
 
 ---
 
-## 📊 GitHub stats
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js v20+
+- npm v9+
+- Git
+
+### Local Development
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/astrax-gif/Ue-portal.git
+cd Ue-portal
+
+# 2. Install backend dependencies
+cd backend
+npm install
+
+# 3. Start the backend
+npm start
+# Server runs at http://localhost:3000
+
+# 4. Open the frontend
+# Open frontend/index.html in your browser
+# or use Live Server in VS Code
+```
+
+---
+
+## ☁️ Deploying to Vultr
+
+### 1 — Create your VPS
+Go to [Vultr](https://vultr.com) → New Instance → Cloud Compute → Ubuntu 22.04 LTS → $6/mo plan.
+
+### 2 — Server setup
+
+```bash
+# SSH in
+ssh root@YOUR_VULTR_IP
+
+# Update & install dependencies
+apt update && apt upgrade -y
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt install -y nodejs git nginx
+npm install -g pm2
+```
+
+### 3 — Clone & run
+
+```bash
+cd /var/www
+git clone https://github.com/astrax-gif/Ue-portal.git
+cd Ue-portal/backend
+npm install
+
+# Start with PM2 (stays alive after logout)
+pm2 start server.js --name ue-portal
+pm2 save && pm2 startup
+```
+
+### 4 — Configure Nginx
+
+```bash
+nano /etc/nginx/sites-available/ue-portal
+```
+
+Paste:
+
+```nginx
+server {
+    listen 80;
+    server_name YOUR_VULTR_IP;
+
+    root /var/www/Ue-portal/frontend;
+    index index.html;
+
+    location /api/ {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+```
+
+```bash
+ln -s /etc/nginx/sites-available/ue-portal /etc/nginx/sites-enabled/
+nginx -t && systemctl restart nginx
+
+# Open firewall
+ufw allow OpenSSH
+ufw allow 'Nginx Full'
+ufw enable
+```
+
+Visit `http://YOUR_VULTR_IP` — portal is live 🎉
+
+---
+
+## 🎨 Design
+
+- **Color palette:** UE Dubai red `#CC0000` + white
+- **Fonts:** Inter / system-ui
+- **Style:** Clean, minimal — optimized for quick room lookups on mobile
+
+---
+
+## 📸 Screenshots
+
+> _Add screenshots here once deployed_
+
+```md
+![Timetable View](./assets/screenshots/timetable.png)
+![Find My Class](./assets/screenshots/find-class.png)
+![Navigation Map](./assets/screenshots/navigation.png)
+```
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | HTML5, CSS3, Vanilla JavaScript |
+| Backend | Node.js, Express.js |
+| Data | JSON (timetable seed) |
+| Hosting | Vultr Cloud Compute |
+| Web Server | Nginx + PM2 |
+
+---
+
+## 👨‍💻 Author
+
+**Made for UE Dubai — Digital Transformation & Decision Support Systems**  
+Built as part of FAB Innovation Month 2026 🏆
+
+---
 
 <div align="center">
 
-[![stats](https://github-readme-stats.vercel.app/api?username=astrax-gif&show_icons=true&theme=tokyonight&hide_border=true)](https://github.com/astrax-gif)
+![Footer](https://capsule-render.vercel.app/api?type=waving&color=CC0000&height=120&section=footer)
 
 </div>
-
----
-
-## 👨‍💻 Built by
-
-**Abdurhman Bereket**
-Software Engineering · University of Europe for Applied Sciences, Dubai
-
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/abdurhmanbereket/)
-[![Email](https://img.shields.io/badge/Email-EA4335?style=for-the-badge&logo=gmail&logoColor=white)](mailto:abdurhmanbereket74@gmail.com)
-
----
-
-![footer](https://capsule-render.vercel.app/api?type=waving&color=0:283593,100:0a0e27&height=110&section=footer)
