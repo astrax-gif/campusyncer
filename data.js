@@ -1,0 +1,188 @@
+// ═══════════════════════════════════════════════════
+// UE DUBAI CAMPUS — Room Portal Data Layer
+// ═══════════════════════════════════════════════════
+
+const ROOMS = [
+  // Floor 1 — Lecture Halls & Main Spaces
+  { id:'AUD',    name:'Auditorium',       floor:1, type:'Auditorium',    capacity:150, features:['Projector','Mic System','Recording'] },
+  { id:'R101',   name:'Room 101',          floor:1, type:'Lecture Hall',  capacity:80,  features:['Projector','Whiteboard','AC'] },
+  { id:'R102',   name:'Room 102',          floor:1, type:'Lecture Hall',  capacity:60,  features:['Projector','Whiteboard','AC'] },
+  { id:'R103',   name:'Room 103',          floor:1, type:'Seminar Room',  capacity:35,  features:['Smart TV','Whiteboard','AC'] },
+  { id:'R104',   name:'Room 104',          floor:1, type:'Conference',    capacity:20,  features:['Smart TV','Video Conf','AC'] },
+  // Floor 2 — Seminar & Tutorial Rooms
+  { id:'R201',   name:'Room 201',          floor:2, type:'Seminar Room',  capacity:30,  features:['Projector','Whiteboard'] },
+  { id:'R202',   name:'Room 202',          floor:2, type:'Seminar Room',  capacity:30,  features:['Projector','Whiteboard'] },
+  { id:'R203',   name:'Room 203',          floor:2, type:'Seminar Room',  capacity:25,  features:['Smart TV','Whiteboard'] },
+  { id:'R204',   name:'Room 204',          floor:2, type:'Tutorial Room', capacity:20,  features:['Smart TV','Whiteboard'] },
+  { id:'R205',   name:'Room 205',          floor:2, type:'Tutorial Room', capacity:15,  features:['Smart TV'] },
+  // Floor 3 — Labs & Studios
+  { id:'LAB-A',  name:'Computer Lab A',    floor:3, type:'Computer Lab',  capacity:24,  features:['24x PCs','Software Suite','Projector'] },
+  { id:'LAB-B',  name:'Computer Lab B',    floor:3, type:'Computer Lab',  capacity:24,  features:['24x PCs','Adobe Suite','Projector'] },
+  { id:'DESIGN', name:'Design Studio',     floor:3, type:'Design Studio', capacity:20,  features:['iMacs','Drawing Tablets','Large Displays'] },
+];
+
+// maintenance: set to true via admin to block a room
+const ROOM_MAINTENANCE = {};
+
+let SCHEDULE = [
+  // Monday (day=1)
+  {id:1,  day:1,start:'08:30',end:'10:30',roomId:'R101',  course:'Business Fundamentals',         code:'BUS101',professor:'Prof. Sarah Mitchell',    program:'BA Business Administration',semester:'Fall 2026'},
+  {id:2,  day:1,start:'10:30',end:'12:30',roomId:'R102',  course:'Introduction to Marketing',     code:'MKT101',professor:'Dr. Khalid Al-Rashid',    program:'BA Business Administration',semester:'Fall 2026'},
+  {id:3,  day:1,start:'11:00',end:'13:00',roomId:'R203',  course:'Introduction to Programming',   code:'CS101', professor:'Dr. Elena Vasquez',       program:'BA Computer Science & AI',  semester:'Fall 2026'},
+  {id:4,  day:1,start:'13:00',end:'14:00',roomId:'R104',  course:'Academic Writing Workshop',     code:'GEN101',professor:'Dr. Lena Hoffmeister',    program:'All Programs',              semester:'Fall 2026'},
+  {id:5,  day:1,start:'14:00',end:'16:00',roomId:'LAB-A', course:'Web Development Fundamentals',  code:'CS102', professor:'Dr. Elena Vasquez',       program:'BA Computer Science & AI',  semester:'Fall 2026'},
+  {id:6,  day:1,start:'14:00',end:'16:00',roomId:'R201',  course:'Financial Accounting',          code:'FIN101',professor:'Prof. Marcus Klein',      program:'BA Business Administration',semester:'Fall 2026'},
+  {id:7,  day:1,start:'16:30',end:'18:30',roomId:'R104',  course:'Strategic Management',          code:'MBA501',professor:'Prof. Dr. Anna Hoffmann', program:'MBA',                       semester:'Fall 2026'},
+  {id:8,  day:1,start:'18:00',end:'19:30',roomId:'AUD',   course:'Guest Lecture: Dubai Ecosystem',code:'GEN001',professor:'Industry Speaker',        program:'All Programs',              semester:'Fall 2026'},
+  // Tuesday (day=2)
+  {id:9,  day:2,start:'09:00',end:'11:00',roomId:'R101',  course:'Digital Media Production',      code:'DM101', professor:'Prof. Laura Chen',        program:'BA Digital Media',          semester:'Fall 2026'},
+  {id:10, day:2,start:'09:00',end:'11:00',roomId:'R203',  course:'Data Structures & Algorithms',  code:'CS201', professor:'Dr. Faisal Qureshi',      program:'BA Computer Science & AI',  semester:'Fall 2026'},
+  {id:11, day:2,start:'11:00',end:'13:00',roomId:'LAB-B', course:'UX/UI Design Principles',       code:'DM201', professor:'Prof. Laura Chen',        program:'BA Digital Media',          semester:'Fall 2026'},
+  {id:12, day:2,start:'11:00',end:'13:00',roomId:'R102',  course:'Organizational Behavior',       code:'BUS201',professor:'Prof. Sarah Mitchell',    program:'BA Business Administration',semester:'Fall 2026'},
+  {id:13, day:2,start:'13:30',end:'15:30',roomId:'R204',  course:'Statistics for Business',       code:'QM101', professor:'Dr. Priya Patel',         program:'BA Business Administration',semester:'Fall 2026'},
+  {id:14, day:2,start:'14:00',end:'16:00',roomId:'LAB-A', course:'Machine Learning Foundations',  code:'DS201', professor:'Dr. Priya Patel',         program:'MA Data Science',           semester:'Fall 2026'},
+  {id:15, day:2,start:'16:00',end:'17:00',roomId:'R205',  course:'Mentoring & Advising Session',  code:'GEN102',professor:'Academic Advisor',        program:'All Programs',              semester:'Fall 2026'},
+  {id:16, day:2,start:'17:00',end:'19:00',roomId:'R101',  course:'Digital Marketing Strategy',    code:'DM301', professor:'Dr. Khalid Al-Rashid',    program:'MA Digital Marketing',      semester:'Fall 2026'},
+  // Wednesday (day=3)
+  {id:17, day:3,start:'08:30',end:'10:30',roomId:'R103',  course:'Entrepreneurship & Innovation', code:'BUS301',professor:'Prof. Dr. Anna Hoffmann', program:'BA Business Administration',semester:'Fall 2026'},
+  {id:18, day:3,start:'09:00',end:'11:00',roomId:'LAB-A', course:'Database Management Systems',   code:'CS202', professor:'Dr. Faisal Qureshi',      program:'BA Computer Science & AI',  semester:'Fall 2026'},
+  {id:19, day:3,start:'10:30',end:'12:30',roomId:'DESIGN',course:'Visual Communication Design',   code:'DM102', professor:'Prof. Laura Chen',        program:'BA Digital Media',          semester:'Fall 2026'},
+  {id:20, day:3,start:'11:00',end:'13:00',roomId:'R201',  course:'Corporate Finance',             code:'FIN201',professor:'Prof. Marcus Klein',      program:'BA Business Administration',semester:'Fall 2026'},
+  {id:21, day:3,start:'13:00',end:'15:00',roomId:'R202',  course:'Human Resource Management',     code:'HRM101',professor:'Prof. Sarah Mitchell',    program:'BA Business Administration',semester:'Fall 2026'},
+  {id:22, day:3,start:'14:00',end:'16:00',roomId:'LAB-B', course:'AI & Neural Networks',          code:'CS301', professor:'Dr. Elena Vasquez',       program:'BA Computer Science & AI',  semester:'Fall 2026'},
+  {id:23, day:3,start:'16:30',end:'18:30',roomId:'R104',  course:'Business Analytics',            code:'MBA502',professor:'Dr. Priya Patel',         program:'MBA',                       semester:'Fall 2026'},
+  {id:24, day:3,start:'18:00',end:'20:00',roomId:'R103',  course:'Evening MBA: Finance Module',   code:'MBA510',professor:'Prof. Marcus Klein',      program:'MBA',                       semester:'Fall 2026'},
+  // Thursday (day=4)
+  {id:25, day:4,start:'09:00',end:'11:00',roomId:'R101',  course:'Marketing Management',          code:'MKT201',professor:'Dr. Khalid Al-Rashid',    program:'BA Business Administration',semester:'Fall 2026'},
+  {id:26, day:4,start:'09:00',end:'11:00',roomId:'LAB-A', course:'Data Analytics & Visualization',code:'DS301', professor:'Dr. Priya Patel',         program:'MA Data Science',           semester:'Fall 2026'},
+  {id:27, day:4,start:'10:00',end:'12:00',roomId:'R202',  course:'Social Media Marketing',        code:'DM202', professor:'Dr. Khalid Al-Rashid',    program:'MA Digital Marketing',      semester:'Fall 2026'},
+  {id:28, day:4,start:'11:00',end:'13:00',roomId:'R203',  course:'Software Engineering',          code:'CS203', professor:'Dr. Faisal Qureshi',      program:'BA Computer Science & AI',  semester:'Fall 2026'},
+  {id:29, day:4,start:'13:30',end:'15:30',roomId:'DESIGN',course:'Motion Graphics & Animation',   code:'DM103', professor:'Prof. Laura Chen',        program:'BA Digital Media',          semester:'Fall 2026'},
+  {id:30, day:4,start:'14:00',end:'16:00',roomId:'R102',  course:'International Business',        code:'BUS302',professor:'Prof. Dr. Anna Hoffmann', program:'BA Business Administration',semester:'Fall 2026'},
+  {id:31, day:4,start:'17:00',end:'19:00',roomId:'R101',  course:'Leadership & Management',       code:'MBA503',professor:'Prof. Sarah Mitchell',    program:'MBA',                       semester:'Fall 2026'},
+  {id:32, day:4,start:'17:00',end:'19:00',roomId:'AUD',   course:'Career Fair Prep Seminar',      code:'GEN003',professor:'Career Services Team',    program:'All Programs',              semester:'Fall 2026'},
+  // Friday (day=5)
+  {id:33, day:5,start:'09:00',end:'11:00',roomId:'LAB-B', course:'User Experience Design',        code:'DM204', professor:'Prof. Laura Chen',        program:'BA Digital Media',          semester:'Fall 2026'},
+  {id:34, day:5,start:'09:00',end:'11:00',roomId:'R201',  course:'Business Ethics & Law',         code:'BUS401',professor:'Prof. Dr. Anna Hoffmann', program:'BA Business Administration',semester:'Fall 2026'},
+  {id:35, day:5,start:'10:00',end:'12:00',roomId:'R203',  course:'Cloud Computing Fundamentals',  code:'CS302', professor:'Dr. Elena Vasquez',       program:'BA Computer Science & AI',  semester:'Fall 2026'},
+  {id:36, day:5,start:'11:00',end:'13:00',roomId:'AUD',   course:'Weekly Innovation Forum',       code:'GEN002',professor:'Panel Discussion',        program:'All Programs',              semester:'Fall 2026'},
+  {id:37, day:5,start:'13:00',end:'15:00',roomId:'LAB-A', course:'Natural Language Processing',   code:'DS302', professor:'Dr. Priya Patel',         program:'MA Data Science',           semester:'Fall 2026'},
+  {id:38, day:5,start:'14:00',end:'16:00',roomId:'R102',  course:'Digital Transformation MBA',    code:'MBA504',professor:'Dr. Faisal Qureshi',      program:'MBA',                       semester:'Fall 2026'},
+  {id:39, day:5,start:'16:00',end:'17:30',roomId:'R104',  course:'Student Research Presentations',code:'GEN104',professor:'Faculty Panel',           program:'All Programs',              semester:'Fall 2026'},
+];
+
+let ANNOUNCEMENTS = [
+  {id:1, title:'Campus Closed – UAE National Day', msg:'The campus will be closed on 2–3 December for UAE National Day celebrations.', type:'info', created:'2026-11-10', expires:'2026-12-04'},
+  {id:2, title:'Mid-term Exams Schedule', msg:'Mid-term exams run 18–22 November. Check your programme calendar for room assignments.', type:'warning', created:'2026-11-12', expires:'2026-11-23'},
+];
+
+let PROFESSORS = [
+  {id:1, name:'Prof. Sarah Mitchell',    dept:'Business',   email:'s.mitchell@ue-dubai.ae',  phone:'+971 4 XXX 0001'},
+  {id:2, name:'Dr. Khalid Al-Rashid',   dept:'Business',   email:'k.alrashid@ue-dubai.ae',  phone:'+971 4 XXX 0002'},
+  {id:3, name:'Dr. Elena Vasquez',      dept:'Technology', email:'e.vasquez@ue-dubai.ae',   phone:'+971 4 XXX 0003'},
+  {id:4, name:'Dr. Faisal Qureshi',     dept:'Technology', email:'f.qureshi@ue-dubai.ae',   phone:'+971 4 XXX 0004'},
+  {id:5, name:'Dr. Priya Patel',        dept:'Data',       email:'p.patel@ue-dubai.ae',     phone:'+971 4 XXX 0005'},
+  {id:6, name:'Prof. Laura Chen',       dept:'Design',     email:'l.chen@ue-dubai.ae',      phone:'+971 4 XXX 0006'},
+  {id:7, name:'Prof. Marcus Klein',     dept:'Finance',    email:'m.klein@ue-dubai.ae',     phone:'+971 4 XXX 0007'},
+  {id:8, name:'Prof. Dr. Anna Hoffmann',dept:'Business',   email:'a.hoffmann@ue-dubai.ae',  phone:'+971 4 XXX 0008'},
+  {id:9, name:'Dr. Lena Hoffmeister',   dept:'General',    email:'l.hoffmeister@ue-dubai.ae',phone:'+971 4 XXX 0009'},
+];
+
+let PORTAL_SETTINGS = {
+  semesterName: 'Fall Semester 2026',
+  semesterStart: '2026-09-01',
+  semesterEnd: '2026-12-20',
+  campusName: 'UE Dubai Campus',
+  campusAddress: 'One Central, Dubai World Trade Centre, Dubai, UAE',
+  adminPasswordHash: 'admin2026', // plain for demo; use bcrypt in production
+};
+
+let _nextId = 40;
+function nextId() { return _nextId++; }
+
+// ─── Floor plan layout data ───────────────────────────
+const FLOOR_LAYOUTS = {
+  1: {
+    w:860, h:450,
+    label:'Floor 1 · Lecture Halls & Auditorium',
+    struct:[
+      ['outer',    5,   5, 850, 440, null],
+      ['corridor', 5,   5, 850,  65, 'Main Entrance · Reception · Corridor'],
+      ['util',   620,  73, 100, 192, 'Stairs / Lift'],
+      ['util',   723,  73, 132, 192, ''],
+      ['passage',  5, 269, 850,  38, null],
+    ],
+    rooms:[
+      ['R101',  10, 73, 198, 192],
+      ['R102', 211, 73, 172, 192],
+      ['R103', 386, 73, 128, 192],
+      ['R104', 517, 73, 100, 192],
+      ['AUD',   10,311, 845, 128],
+    ],
+  },
+  2: {
+    w:860, h:345,
+    label:'Floor 2 · Seminar & Tutorial Rooms',
+    struct:[
+      ['outer',  5, 5, 850, 335, null],
+      ['corridor',5,5, 850,  65, 'Floor 2 · Seminar Level'],
+      ['util', 663,73, 100, 192, 'Stairs / Lift'],
+      ['util', 766,73,  89, 192, ''],
+    ],
+    rooms:[
+      ['R201',  10,73, 148, 192],
+      ['R202', 161,73, 148, 192],
+      ['R203', 312,73, 132, 192],
+      ['R204', 447,73, 112, 192],
+      ['R205', 562,73,  98, 192],
+    ],
+  },
+  3: {
+    w:860, h:345,
+    label:'Floor 3 · Innovation & Research Level',
+    struct:[
+      ['outer',  5, 5, 850, 335, null],
+      ['corridor',5,5, 850,  65, 'Floor 3 · Innovation & Research Level'],
+      ['util', 653,73, 100, 198, 'Stairs / Lift'],
+      ['util', 756,73,  99, 198, ''],
+    ],
+    rooms:[
+      ['LAB-A',  10,73, 207, 198],
+      ['LAB-B', 220,73, 207, 198],
+      ['DESIGN', 430,73, 220, 198],
+    ],
+  },
+};
+
+// ─── Helpers (shared by index + admin) ───────────────
+const t2m = t => { const [h,m]=t.split(':').map(Number); return h*60+m; };
+const m2t = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+const fmtT = t => { const [h,m]=t.split(':').map(Number); return `${h%12||12}:${String(m).padStart(2,'0')} ${h>=12?'PM':'AM'}`; };
+const DAY_NAMES=['','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const DAY_SHORT=['','Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+function getNow(){ const d=new Date(); return {jsDay:d.getDay(),min:d.getHours()*60+d.getMinutes()}; }
+function getToday(){ const d=new Date().getDay(); return (d===0||d===6)?1:d; }
+function getRoom(id){ return ROOMS.find(r=>r.id===id); }
+
+function roomStatus(roomId, day, curMin){
+  if(ROOM_MAINTENANCE[roomId]) return {status:'maintenance',entry:null};
+  const es=SCHEDULE.filter(s=>s.roomId===roomId&&s.day===day);
+  const now=es.find(s=>t2m(s.start)<=curMin&&t2m(s.end)>curMin);
+  if(now) return {status:'occ',entry:now};
+  const soon=es.find(s=>t2m(s.start)>curMin&&t2m(s.start)-curMin<=15);
+  if(soon) return {status:'soon',entry:soon};
+  return {status:es.length>0?'free':'empty',entry:null};
+}
+
+function exportCSV(day){
+  const rows=[['Time','Course','Code','Room','Professor','Program','Semester']];
+  SCHEDULE.filter(s=>day?s.day===day:true).sort((a,b)=>a.day-b.day||t2m(a.start)-t2m(b.start)).forEach(s=>{
+    rows.push([`${DAY_SHORT[s.day]} ${fmtT(s.start)}-${fmtT(s.end)}`,s.course,s.code,s.roomId,s.professor,s.program,s.semester||'']);
+  });
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=`ue-dubai-schedule${day?'-'+DAY_NAMES[day]:'full'}.csv`;
+  a.click();
+}
