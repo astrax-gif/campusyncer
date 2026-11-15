@@ -200,8 +200,7 @@ Visit `(http://78.141.194.82/)` — portal is live 🎉
 
 ## 👨‍💻 Author
 
-**Made for UE Dubai — Digital Transformation & Decision Support Systems**  
-Built as part of FAB Innovation Month 2026 🏆
+**Made for UE Dubai
 
 ---
 
