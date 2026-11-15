@@ -172,7 +172,7 @@ ufw allow 'Nginx Full'
 ufw enable
 ```
 
-Visit `http://YOUR_VULTR_IP` — portal is live 🎉
+Visit `(http://78.141.194.82/)` — portal is live 🎉
 
 ---
 
@@ -184,17 +184,7 @@ Visit `http://YOUR_VULTR_IP` — portal is live 🎉
 
 ---
 
-## 📸 Screenshots
 
-> _Add screenshots here once deployed_
-
-```md
-![Timetable View](./assets/screenshots/timetable.png)
-![Find My Class](./assets/screenshots/find-class.png)
-![Navigation Map](./assets/screenshots/navigation.png)
-```
-
----
 
 ## 🛠️ Tech Stack
 
