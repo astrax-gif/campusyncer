@@ -1,9 +1,8 @@
-[README (8).md](https://github.com/user-attachments/files/34875971/README.8.md)
 <div align="center">
 
-![Header](https://capsule-render.vercel.app/api?type=waving&color=CC0000&height=220&section=header&text=UE%20Campus%20Portal&fontSize=52&fontColor=ffffff&animation=fadeIn&desc=Smart%20Classroom%20Availability%20%26%20Indoor%20Navigation&descSize=18&descAlignY=75)
+![Header](https://capsule-render.vercel.app/api?type=waving&color=CC0000&height=200&section=header&text=UE%20Campus%20Portal&fontSize=52&fontColor=ffffff&animation=fadeIn)
 
-[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&size=20&pause=1000&color=CC0000&center=true&vCenter=true&width=600&lines=Find+your+classroom+in+seconds;Live+timetable+%E2%80%94+no+more+guessing;Indoor+navigation+via+QR+code;Built+for+UE+Dubai+students+%26+staff)](https://git.io/typing-svg)
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&size=20&pause=1000&color=CC0000&center=true&vCenter=true&width=600&lines=UE+Smart+Campus+Portal;Find+your+classroom+in+seconds;Live+timetable+-+no+more+guessing;Indoor+navigation+via+QR+code;Built+for+UE+Dubai)](https://git.io/typing-svg)
 
 <br/>
 
@@ -218,6 +217,6 @@ Built as part of FAB Innovation Month 2026 🏆
 
 <div align="center">
 
-![Footer](https://capsule-render.vercel.app/api?type=waving&color=CC0000&height=120&section=footer)
+![Footer](https://capsule-render.vercel.app/api?type=waving&color=CC0000&height=100&section=footer&animation=fadeIn)
 
 </div>
