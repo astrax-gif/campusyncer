@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>UE Dubai — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Raleway:wght@700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="topbar-stripe"></div>
+  <div class="topbar-inner">
+    <div class="brand" onclick="location.href='index.html'">
+      <div class="brand-badge">UE</div>
+      <div class="brand-text">
+        <div class="brand-name">Admin Panel</div>
+        <div class="brand-sub">UE Dubai Campus</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <a href="index.html" class="btn btn-out btn-sm"><i class="fa-solid fa-arrow-left"></i> Back to Portal</a>
+      <div id="live-clock">--:-- --</div>
+    </div>
+  </div>
+</nav>
+
+<div class="app">
+
+  <!-- LOGIN -->
+  <div id="adm-login">
+    <div class="adm-login">
+      <div style="display:flex;justify-content:center;margin-bottom:22px">
+        <div class="brand-badge" style="width:52px;height:52px;font-size:22px;border-radius:12px">UE</div>
+      </div>
+      <h2>Admin Access</h2>
+      <p>University of Europe for Applied Sciences · Dubai Campus</p>
+      <div class="ff"><label>Username</label><input type="text" id="au" value="admin" placeholder="admin"></div>
+      <div class="ff"><label>Password</label><input type="password" id="ap" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn btn-red btn-full mt" style="margin-top:14px" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> Sign In</button>
+      <div class="login-err" id="login-err">Incorrect credentials. Demo password: <code>admin2026</code></div>
+      <div style="font-size:10.5px;color:var(--txt-muted);text-align:center;margin-top:12px">Demo password: <code>admin2026</code></div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD (after login) -->
+  <div id="adm-dash" style="display:none">
+
+    <div class="adm-top">
+      <h2><i class="fa-solid fa-shield-halved" style="color:var(--red)"></i> Admin Dashboard</h2>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="font-size:12px;color:var(--txt-muted)">Logged in as <strong>admin</strong></span>
+        <button class="btn btn-out btn-sm" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+      </div>
+    </div>
+
+    <!-- Quick stats bar -->
+    <div class="stats" style="margin-bottom:20px">
+      <div class="stat s-occ"><div class="stat-lbl">Total Rooms</div><div class="stat-val" id="as-rooms">—</div></div>
+      <div class="stat"><div class="stat-lbl">Weekly Classes</div><div class="stat-val" id="as-cls">—</div></div>
+      <div class="stat"><div class="stat-lbl">Professors</div><div class="stat-val" id="as-profs">—</div></div>
+      <div class="stat s-soon"><div class="stat-lbl">Announcements</div><div class="stat-val" id="as-ann">—</div></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="adm-tabs" id="adm-tabs">
+      <div class="a-tab active" data-at="schedule" onclick="setTab('schedule')"><i class="fa-solid fa-calendar-days"></i> Schedule</div>
+      <div class="a-tab" data-at="rooms"    onclick="setTab('rooms')"><i class="fa-solid fa-door-open"></i> Rooms</div>
+      <div class="a-tab" data-at="profs"    onclick="setTab('profs')"><i class="fa-solid fa-chalkboard-user"></i> Professors</div>
+      <div class="a-tab" data-at="announce" onclick="setTab('announce')"><i class="fa-solid fa-bullhorn"></i> Announcements</div>
+      <div class="a-tab" data-at="reports"  onclick="setTab('reports')"><i class="fa-solid fa-chart-bar"></i> Reports</div>
+      <div class="a-tab" data-at="settings" onclick="setTab('settings')"><i class="fa-solid fa-gear"></i> Settings</div>
+    </div>
+
+    <!-- ══ TAB: SCHEDULE ══ -->
+    <div id="at-schedule">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+        <div class="day-tabs" id="adm-day-tabs">
+          <div class="d-tab active" data-d="1" onclick="setAdmDay(1)">Mon</div>
+          <div class="d-tab" data-d="2" onclick="setAdmDay(2)">Tue</div>
+          <div class="d-tab" data-d="3" onclick="setAdmDay(3)">Wed</div>
+          <div class="d-tab" data-d="4" onclick="setAdmDay(4)">Thu</div>
+          <div class="d-tab" data-d="5" onclick="setAdmDay(5)">Fri</div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-out btn-sm" onclick="exportCSV(curAdmDay)"><i class="fa-solid fa-file-csv"></i> Export Day</button>
+          <button class="btn btn-out btn-sm" onclick="exportCSV(null)"><i class="fa-solid fa-download"></i> Export Full Week</button>
+          <button class="btn btn-red btn-sm" onclick="showAddModal()"><i class="fa-solid fa-plus"></i> Add Class</button>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table class="dtbl">
+          <thead><tr><th>TIME</th><th>COURSE</th><th>CODE</th><th>ROOM</th><th>PROFESSOR</th><th>PROGRAM</th><th style="width:80px">ACTIONS</th></tr></thead>
+          <tbody id="adm-sched-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ TAB: ROOMS ══ -->
+    <div id="at-rooms" style="display:none">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px;gap:8px">
+        <button class="btn btn-red btn-sm" onclick="showAddRoomModal()"><i class="fa-solid fa-plus"></i> Add Room</button>
+      </div>
+      <div class="tbl-wrap">
+        <table class="dtbl">
+          <thead><tr><th>ID</th><th>NAME</th><th>FLOOR</th><th>TYPE</th><th>CAPACITY</th><th>FEATURES</th><th>STATUS NOW</th><th>MAINTENANCE</th></tr></thead>
+          <tbody id="adm-rooms-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ TAB: PROFESSORS ══ -->
+    <div id="at-profs" style="display:none">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px;gap:8px">
+        <button class="btn btn-red btn-sm" onclick="showAddProfModal()"><i class="fa-solid fa-plus"></i> Add Professor</button>
+      </div>
+      <div class="tbl-wrap">
+        <table class="dtbl">
+          <thead><tr><th>NAME</th><th>DEPARTMENT</th><th>EMAIL</th><th>PHONE</th><th>COURSES</th><th>HRS/WEEK</th><th>ACTIONS</th></tr></thead>
+          <tbody id="adm-profs-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ TAB: ANNOUNCEMENTS ══ -->
+    <div id="at-announce" style="display:none">
+      <div class="two-col" style="margin-bottom:20px">
+        <div class="card">
+          <div class="card-title"><i class="fa-solid fa-plus-circle" style="color:var(--red)"></i> New Announcement</div>
+          <div class="ff"><label>Title</label><input type="text" id="ann-title" placeholder="e.g. Campus Closed – National Day"></div>
+          <div class="ff"><label>Message</label><textarea id="ann-msg" rows="3" placeholder="Full announcement text…"></textarea></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="ff"><label>Type</label>
+              <select id="ann-type">
+                <option value="info">ℹ️ Info</option>
+                <option value="warning">⚠️ Warning</option>
+                <option value="urgent">🚨 Urgent</option>
+              </select>
+            </div>
+            <div class="ff"><label>Expires</label><input type="date" id="ann-exp"></div>
+          </div>
+          <button class="btn btn-red btn-full" onclick="addAnnouncement()"><i class="fa-solid fa-bullhorn"></i> Post Announcement</button>
+        </div>
+        <div class="card">
+          <div class="card-title"><i class="fa-solid fa-list" style="color:var(--txt-muted)"></i> Active Announcements</div>
+          <div id="ann-list"><div class="empty-state"><i class="fa-solid fa-bullhorn"></i>No active announcements</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: REPORTS ══ -->
+    <div id="at-reports" style="display:none">
+      <div class="two-col" style="margin-bottom:18px">
+        <div class="card">
+          <div class="card-title"><i class="fa-solid fa-trophy" style="color:var(--red)"></i> Busiest Rooms (weekly)</div>
+          <div id="rpt-rooms"></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><i class="fa-solid fa-calendar-week" style="color:var(--red)"></i> Classes Per Day</div>
+          <div id="rpt-days"></div>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title"><i class="fa-solid fa-clock" style="color:var(--red)"></i> Busiest Time Slots</div>
+          <div id="rpt-times"></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><i class="fa-solid fa-chalkboard-user" style="color:var(--red)"></i> Professor Workload</div>
+          <div id="rpt-profs"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: SETTINGS ══ -->
+    <div id="at-settings" style="display:none">
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title"><i class="fa-solid fa-university" style="color:var(--red)"></i> Campus Information</div>
+          <div class="ff"><label>Semester Name</label><input type="text" id="set-sem" placeholder="e.g. Fall Semester 2026"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="ff"><label>Semester Start</label><input type="date" id="set-start"></div>
+            <div class="ff"><label>Semester End</label><input type="date" id="set-end"></div>
+          </div>
+          <div class="ff"><label>Campus Name</label><input type="text" id="set-campus" placeholder="UE Dubai Campus"></div>
+          <div class="ff"><label>Campus Address</label><input type="text" id="set-addr" placeholder="One Central, Dubai World Trade Centre"></div>
+          <button class="btn btn-green btn-sm" onclick="saveSettings()"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
+        </div>
+        <div class="card">
+          <div class="card-title"><i class="fa-solid fa-lock" style="color:var(--red)"></i> Security</div>
+          <div class="ff"><label>Current Password</label><input type="password" id="set-cur" placeholder="Current password"></div>
+          <div class="ff"><label>New Password</label><input type="password" id="set-new" placeholder="New password (min 8 chars)"></div>
+          <div class="ff"><label>Confirm Password</label><input type="password" id="set-conf" placeholder="Confirm new password"></div>
+          <button class="btn btn-red btn-sm" onclick="changePassword()"><i class="fa-solid fa-key"></i> Update Password</button>
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+            <div class="card-title" style="margin-bottom:10px"><i class="fa-solid fa-info-circle" style="color:var(--txt-muted)"></i> Portal Info</div>
+            <div style="font-size:12.5px;color:var(--txt-muted);line-height:1.8" id="set-info"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /adm-dash -->
+</div>
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- Add/Edit Class -->
+<div class="overlay" id="class-overlay" onclick="closeClassModal(event)">
+  <div class="modal">
+    <div class="modal-hdr" style="padding-bottom:14px">
+      <div class="m-rname" style="font-size:17px" id="class-modal-title">Add Class</div>
+      <div class="m-close" onclick="closeClassModal(null,true)"><i class="fa-solid fa-xmark"></i></div>
+    </div>
+    <div style="padding:0 20px 20px">
+      <input type="hidden" id="edit-id">
+      <div class="ff"><label>Day</label>
+        <select id="a-day">
+          <option value="1">Monday</option><option value="2">Tuesday</option>
+          <option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option>
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="ff"><label>Start Time</label><input type="time" id="a-start" value="09:00"></div>
+        <div class="ff"><label>End Time</label><input type="time" id="a-end" value="11:00"></div>
+      </div>
+      <div class="ff"><label>Room</label><select id="a-room"></select></div>
+      <div class="ff"><label>Course Name</label><input type="text" id="a-course" placeholder="e.g. Advanced Data Analytics"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="ff"><label>Course Code</label><input type="text" id="a-code" placeholder="e.g. DS401"></div>
+        <div class="ff"><label>Semester</label><input type="text" id="a-sem" placeholder="e.g. Fall 2026"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="ff"><label>Professor</label>
+          <select id="a-prof-sel"></select>
+        </div>
+        <div class="ff"><label>Program</label>
+          <select id="a-prog-sel">
+            <option>BA Business Administration</option>
+            <option>BA Computer Science & AI</option>
+            <option>BA Digital Media</option>
+            <option>MA Data Science</option>
+            <option>MA Digital Marketing</option>
+            <option>MBA</option>
+            <option>All Programs</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-red btn-full" id="class-modal-btn" onclick="submitClassModal()"><i class="fa-solid fa-plus"></i> Add to Schedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Room -->
+<div class="overlay" id="room-add-overlay" onclick="closeRoomAddModal(event)">
+  <div class="modal">
+    <div class="modal-hdr" style="padding-bottom:14px">
+      <div class="m-rname" style="font-size:17px">Add Room</div>
+      <div class="m-close" onclick="closeRoomAddModal(null,true)"><i class="fa-solid fa-xmark"></i></div>
+    </div>
+    <div style="padding:0 20px 20px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="ff"><label>Room ID</label><input type="text" id="nr-id" placeholder="e.g. R301"></div>
+        <div class="ff"><label>Floor</label>
+          <select id="nr-floor"><option value="1">Floor 1</option><option value="2">Floor 2</option><option value="3">Floor 3</option></select>
+        </div>
+      </div>
+      <div class="ff"><label>Room Name</label><input type="text" id="nr-name" placeholder="e.g. Room 301"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="ff"><label>Type</label>
+          <select id="nr-type">
+            <option>Lecture Hall</option><option>Seminar Room</option><option>Tutorial Room</option>
+            <option>Computer Lab</option><option>Design Studio</option><option>Conference</option><option>Auditorium</option>
+          </select>
+        </div>
+        <div class="ff"><label>Capacity</label><input type="number" id="nr-cap" placeholder="e.g. 30" min="1"></div>
+      </div>
+      <div class="ff"><label>Features (comma separated)</label><input type="text" id="nr-feat" placeholder="e.g. Projector, Whiteboard, AC"></div>
+      <button class="btn btn-red btn-full" onclick="addRoom()"><i class="fa-solid fa-plus"></i> Add Room</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Professor -->
+<div class="overlay" id="prof-overlay" onclick="closeProfModal(event)">
+  <div class="modal">
+    <div class="modal-hdr" style="padding-bottom:14px">
+      <div class="m-rname" style="font-size:17px">Add Professor</div>
+      <div class="m-close" onclick="closeProfModal(null,true)"><i class="fa-solid fa-xmark"></i></div>
+    </div>
+    <div style="padding:0 20px 20px">
+      <div class="ff"><label>Full Name</label><input type="text" id="p-name" placeholder="e.g. Dr. James Smith"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="ff"><label>Department</label><input type="text" id="p-dept" placeholder="e.g. Technology"></div>
+        <div class="ff"><label>Email</label><input type="email" id="p-email" placeholder="j.smith@ue-dubai.ae"></div>
+      </div>
+      <div class="ff"><label>Phone</label><input type="tel" id="p-phone" placeholder="+971 4 XXX XXXX"></div>
+      <button class="btn btn-red btn-full" onclick="addProf()"><i class="fa-solid fa-plus"></i> Add Professor</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="data.js"></script>
+<script>
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let admLoggedIn=false, curAdmDay=1, curAdmTab='schedule';
+
+// ═══════════════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════════════
+function updateClock(){
+  const d=new Date(),h=d.getHours(),m=String(d.getMinutes()).padStart(2,'0');
+  document.getElementById('live-clock').textContent=`${h%12||12}:${m} ${h>=12?'PM':'AM'}`;
+}
+setInterval(updateClock,10000); updateClock();
+
+// ═══════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════
+function doLogin(){
+  if(document.getElementById('ap').value===PORTAL_SETTINGS.adminPasswordHash){
+    admLoggedIn=true;
+    document.getElementById('adm-login').style.display='none';
+    document.getElementById('adm-dash').style.display='';
+    initDash();
+  } else {
+    document.getElementById('login-err').style.display='block';
+  }
+}
+function doLogout(){admLoggedIn=false;document.getElementById('adm-login').style.display='';document.getElementById('adm-dash').style.display='none';document.getElementById('ap').value='';}
+document.getElementById('ap').addEventListener('keydown',e=>e.key==='Enter'&&doLogin());
+
+// ═══════════════════════════════════════════════
+// DASHBOARD INIT
+// ═══════════════════════════════════════════════
+function initDash(){
+  updateQuickStats();
+  populateDropdowns();
+  renderAdmSched();
+  loadSettings();
+  setTab('schedule');
+}
+function updateQuickStats(){
+  document.getElementById('as-rooms').textContent=ROOMS.length;
+  document.getElementById('as-cls').textContent=SCHEDULE.length;
+  document.getElementById('as-profs').textContent=PROFESSORS.length;
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('as-ann').textContent=ANNOUNCEMENTS.filter(a=>a.expires>=today).length;
+}
+function populateDropdowns(){
+  // Room select
+  const rs=document.getElementById('a-room');rs.innerHTML='';
+  ROOMS.forEach(r=>{const o=document.createElement('option');o.value=r.id;o.textContent=`${r.id} — ${r.name} (Floor ${r.floor})`;rs.appendChild(o);});
+  // Professor select
+  const ps=document.getElementById('a-prof-sel');ps.innerHTML='';
+  PROFESSORS.forEach(p=>{const o=document.createElement('option');o.value=p.name;o.textContent=p.name;ps.appendChild(o);});
+}
+
+// ═══════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════
+function setTab(t){
+  curAdmTab=t;
+  document.querySelectorAll('.a-tab').forEach(e=>e.classList.toggle('active',e.dataset.at===t));
+  ['schedule','rooms','profs','announce','reports','settings'].forEach(id=>{
+    document.getElementById(`at-${id}`).style.display=id===t?'':'none';
+  });
+  if(t==='rooms')    renderAdmRooms();
+  if(t==='profs')    renderAdmProfs();
+  if(t==='announce') renderAnnouncements();
+  if(t==='reports')  renderReports();
+  if(t==='settings') loadSettings();
+}
+
+// ═══════════════════════════════════════════════
+// TAB 1 — SCHEDULE
+// ═══════════════════════════════════════════════
+function setAdmDay(d){
+  curAdmDay=d;
+  document.querySelectorAll('#adm-day-tabs .d-tab').forEach(t=>t.classList.toggle('active',parseInt(t.dataset.d)===d));
+  renderAdmSched();
+}
+function renderAdmSched(){
+  const es=SCHEDULE.filter(s=>s.day===curAdmDay).sort((a,b)=>t2m(a.start)-t2m(b.start));
+  const tb=document.getElementById('adm-sched-body');
+  tb.innerHTML=es.length===0?`<tr><td colspan="7" class="empty-state">No classes on ${DAY_NAMES[curAdmDay]}. <a href="#" onclick="showAddModal();return false" style="color:var(--red)">Add one?</a></td></tr>`
+    :es.map(e=>`<tr>
+      <td style="font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--txt-muted)">${fmtT(e.start)} – ${fmtT(e.end)}</td>
+      <td style="font-weight:600">${e.course}</td>
+      <td><span class="code-pill">${e.code}</span></td>
+      <td><strong>${e.roomId}</strong></td>
+      <td>${e.professor}</td>
+      <td><span class="prog-tag">${e.program}</span></td>
+      <td style="display:flex;gap:5px">
+        <button class="btn btn-out btn-sm" onclick="editEntry(${e.id})" title="Edit"><i class="fa-solid fa-pencil"></i></button>
+        <button class="btn btn-out btn-sm" onclick="delEntry(${e.id})" title="Delete" style="color:var(--red);border-color:#FECACA!important"><i class="fa-solid fa-trash-can"></i></button>
+      </td>
+    </tr>`).join('');
+}
+
+function editEntry(id){
+  const e=SCHEDULE.find(s=>s.id===id);if(!e)return;
+  document.getElementById('edit-id').value=id;
+  document.getElementById('class-modal-title').textContent='Edit Class';
+  document.getElementById('class-modal-btn').innerHTML='<i class="fa-solid fa-floppy-disk"></i> Save Changes';
+  document.getElementById('a-day').value=e.day;
+  document.getElementById('a-start').value=e.start;
+  document.getElementById('a-end').value=e.end;
+  document.getElementById('a-room').value=e.roomId;
+  document.getElementById('a-course').value=e.course;
+  document.getElementById('a-code').value=e.code;
+  document.getElementById('a-sem').value=e.semester||'';
+  document.getElementById('a-prof-sel').value=e.professor;
+  document.getElementById('a-prog-sel').value=e.program;
+  document.getElementById('class-overlay').classList.add('open');
+}
+function delEntry(id){
+  if(!confirm('Remove this class from the schedule?'))return;
+  SCHEDULE=SCHEDULE.filter(s=>s.id!==id);
+  renderAdmSched();updateQuickStats();showToast('Class removed');
+}
+
+// ═══════════════════════════════════════════════
+// TAB 2 — ROOMS
+// ═══════════════════════════════════════════════
+function renderAdmRooms(){
+  const {min}=getNow(),today=getToday();
+  const stC={occ:'#FECACA',free:'#BBF7D0',soon:'#FDE68A',empty:'var(--border)',maintenance:'#E5E7EB'};
+  const stL={occ:'In Session',free:'Free',soon:'Starting Soon',empty:'No class today',maintenance:'Maintenance'};
+  document.getElementById('adm-rooms-body').innerHTML=ROOMS.map(r=>{
+    const st=roomStatus(r.id,today,min);
+    const isMaint=!!ROOM_MAINTENANCE[r.id];
+    return`<tr>
+      <td style="font-weight:800">${r.id}</td>
+      <td>${r.name}</td>
+      <td>Floor ${r.floor}</td>
+      <td>${r.type}</td>
+      <td>${r.capacity}</td>
+      <td style="font-size:11px;color:var(--txt-muted)">${(r.features||[]).join(', ')||'—'}</td>
+      <td><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;background:${isMaint?'#E5E7EB':stC[st.status]}">${isMaint?'Maintenance':stL[st.status]}</span></td>
+      <td>
+        <label class="toggle-wrap" onclick="toggleMaint('${r.id}')">
+          <div class="toggle ${isMaint?'on':''}" id="tog-${r.id}"></div>
+          <span style="font-size:11.5px;color:var(--txt-muted)">${isMaint?'On':'Off'}</span>
+        </label>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function toggleMaint(id){
+  if(ROOM_MAINTENANCE[id]) delete ROOM_MAINTENANCE[id];
+  else ROOM_MAINTENANCE[id]=true;
+  renderAdmRooms();
+  showToast(`${id} maintenance ${ROOM_MAINTENANCE[id]?'enabled':'disabled'}`);
+}
+
+// ═══════════════════════════════════════════════
+// TAB 3 — PROFESSORS
+// ═══════════════════════════════════════════════
+function renderAdmProfs(){
+  document.getElementById('adm-profs-body').innerHTML=PROFESSORS.map(p=>{
+    const courses=[...new Set(SCHEDULE.filter(s=>s.professor===p.name).map(s=>s.code))];
+    const hrs=SCHEDULE.filter(s=>s.professor===p.name).reduce((acc,s)=>{
+      const diff=(t2m(s.end)-t2m(s.start))/60;return acc+diff;
+    },0);
+    return`<tr>
+      <td><strong>${p.name}</strong></td>
+      <td><span class="prog-tag">${p.dept}</span></td>
+      <td><a href="mailto:${p.email}" style="color:var(--red)">${p.email}</a></td>
+      <td style="color:var(--txt-muted)">${p.phone}</td>
+      <td style="font-size:12px">${courses.map(c=>`<span class="code-pill" style="margin:1px;font-size:9px">${c}</span>`).join('')||'<span style="color:var(--txt-muted)">No classes</span>'}</td>
+      <td style="font-weight:700">${hrs.toFixed(1)}h</td>
+      <td>
+        <button class="btn btn-out btn-sm" onclick="delProf(${p.id})" style="color:var(--red);border-color:#FECACA!important"><i class="fa-solid fa-trash-can"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function delProf(id){
+  if(!confirm('Remove this professor?'))return;
+  PROFESSORS=PROFESSORS.filter(p=>p.id!==id);
+  renderAdmProfs();populateDropdowns();updateQuickStats();showToast('Professor removed');
+}
+
+// ═══════════════════════════════════════════════
+// TAB 4 — ANNOUNCEMENTS
+// ═══════════════════════════════════════════════
+function renderAnnouncements(){
+  const today=new Date().toISOString().split('T')[0];
+  const all=ANNOUNCEMENTS.sort((a,b)=>b.created.localeCompare(a.created));
+  const list=document.getElementById('ann-list');
+  if(!list)return;
+  list.innerHTML=all.length===0?'<div class="empty-state"><i class="fa-solid fa-bullhorn"></i>No announcements yet</div>'
+    :all.map(a=>{
+      const expired=a.expires<today;
+      return`<div style="padding:10px 0;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
+            <span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;background:${a.type==='urgent'?'var(--red-lt)':a.type==='warning'?'var(--yellow-bg)':'#EFF6FF'};color:${a.type==='urgent'?'var(--red)':a.type==='warning'?'var(--yellow)':'#1D4ED8'}">${a.type.toUpperCase()}</span>
+            ${expired?'<span style="font-size:10px;color:var(--txt-muted);font-weight:600">EXPIRED</span>':''}
+          </div>
+          <div style="font-weight:700;font-size:13px">${a.title}</div>
+          <div style="font-size:12px;color:var(--txt-muted);margin-top:2px">${a.msg}</div>
+          <div style="font-size:11px;color:var(--txt-muted);margin-top:4px">Posted ${a.created} · Expires ${a.expires}</div>
+        </div>
+        <button class="btn btn-out btn-sm" onclick="delAnn(${a.id})" style="color:var(--red);border-color:#FECACA!important;flex-shrink:0"><i class="fa-solid fa-trash-can"></i></button>
+      </div>`;
+    }).join('');
+}
+function addAnnouncement(){
+  const title=document.getElementById('ann-title').value.trim();
+  const msg=document.getElementById('ann-msg').value.trim();
+  const type=document.getElementById('ann-type').value;
+  const exp=document.getElementById('ann-exp').value;
+  if(!title||!msg||!exp){alert('Please fill in all fields.');return;}
+  ANNOUNCEMENTS.push({id:nextId(),title,msg,type,created:new Date().toISOString().split('T')[0],expires:exp});
+  document.getElementById('ann-title').value='';
+  document.getElementById('ann-msg').value='';
+  renderAnnouncements();updateQuickStats();showToast('Announcement posted');
+}
+function delAnn(id){if(!confirm('Delete this announcement?'))return;ANNOUNCEMENTS=ANNOUNCEMENTS.filter(a=>a.id!==id);renderAnnouncements();updateQuickStats();showToast('Announcement removed');}
+
+// ═══════════════════════════════════════════════
+// TAB 5 — REPORTS
+// ═══════════════════════════════════════════════
+function renderReports(){
+  // Busiest rooms
+  const roomCnt={};SCHEDULE.forEach(s=>roomCnt[s.roomId]=(roomCnt[s.roomId]||0)+1);
+  const sortedR=Object.entries(roomCnt).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxR=sortedR[0]?.[1]||1;
+  document.getElementById('rpt-rooms').innerHTML=sortedR.map(([id,c])=>`
+    <div class="occ-row"><div class="occ-id">${id}</div>
+    <div class="occ-bar-wrap"><div class="occ-bar-fill" style="width:${(c/maxR)*100}%"></div></div>
+    <div class="occ-count">${c}</div><div style="font-size:11px;color:var(--txt-muted)">/wk</div></div>`).join('');
+
+  // Classes per day
+  const dayCnt={1:0,2:0,3:0,4:0,5:0};
+  SCHEDULE.forEach(s=>{if(dayCnt[s.day]!==undefined)dayCnt[s.day]++;});
+  const maxD=Math.max(...Object.values(dayCnt));
+  document.getElementById('rpt-days').innerHTML=Object.entries(dayCnt).map(([d,c])=>`
+    <div class="occ-row"><div class="occ-id">${DAY_SHORT[d]}</div>
+    <div class="occ-bar-wrap"><div class="occ-bar-fill" style="width:${(c/maxD)*100}%;background:var(--red-dk)"></div></div>
+    <div class="occ-count">${c}</div><div style="font-size:11px;color:var(--txt-muted)">classes</div></div>`).join('');
+
+  // Busiest time slots (per hour)
+  const hourCnt={};
+  SCHEDULE.forEach(s=>{
+    let h=parseInt(s.start.split(':')[0]);
+    const eh=parseInt(s.end.split(':')[0]);
+    while(h<eh){hourCnt[h]=(hourCnt[h]||0)+1;h++;}
+  });
+  const sortedH=Object.entries(hourCnt).sort((a,b)=>parseInt(a[0])-parseInt(b[0]));
+  const maxH=Math.max(...Object.values(hourCnt));
+  document.getElementById('rpt-times').innerHTML=sortedH.map(([h,c])=>`
+    <div class="occ-row">
+      <div class="occ-id" style="font-size:11px">${parseInt(h)%12||12}${parseInt(h)<12?'am':'pm'}</div>
+      <div class="occ-bar-wrap"><div class="occ-bar-fill" style="width:${(c/maxH)*100}%;background:var(--yellow)"></div></div>
+      <div class="occ-count">${c}</div></div>`).join('');
+
+  // Professor workload
+  const profHrs={};
+  SCHEDULE.forEach(s=>{const h=(t2m(s.end)-t2m(s.start))/60;profHrs[s.professor]=(profHrs[s.professor]||0)+h;});
+  const sortedP=Object.entries(profHrs).sort((a,b)=>b[1]-a[1]);
+  const maxP=sortedP[0]?.[1]||1;
+  document.getElementById('rpt-profs').innerHTML=sortedP.map(([name,h])=>`
+    <div class="occ-row">
+      <div style="width:150px;font-size:11.5px;font-weight:600;color:var(--txt-mid)">${name.replace(/^(Prof\.|Dr\.)\s/,'')}</div>
+      <div class="occ-bar-wrap"><div class="occ-bar-fill" style="width:${(h/maxP)*100}%;background:#8B5CF6"></div></div>
+      <div class="occ-count">${h.toFixed(1)}</div><div style="font-size:11px;color:var(--txt-muted)">h/wk</div></div>`).join('');
+}
+
+// ═══════════════════════════════════════════════
+// TAB 6 — SETTINGS
+// ═══════════════════════════════════════════════
+function loadSettings(){
+  document.getElementById('set-sem').value=PORTAL_SETTINGS.semesterName;
+  document.getElementById('set-start').value=PORTAL_SETTINGS.semesterStart;
+  document.getElementById('set-end').value=PORTAL_SETTINGS.semesterEnd;
+  document.getElementById('set-campus').value=PORTAL_SETTINGS.campusName;
+  document.getElementById('set-addr').value=PORTAL_SETTINGS.campusAddress;
+  const info=document.getElementById('set-info');
+  if(info)info.innerHTML=`Version: <strong>1.0.0</strong><br>Rooms: <strong>${ROOMS.length}</strong><br>Total schedule entries: <strong>${SCHEDULE.length}</strong><br>Built for: <strong>${PORTAL_SETTINGS.campusName}</strong>`;
+}
+function saveSettings(){
+  PORTAL_SETTINGS.semesterName=document.getElementById('set-sem').value;
+  PORTAL_SETTINGS.semesterStart=document.getElementById('set-start').value;
+  PORTAL_SETTINGS.semesterEnd=document.getElementById('set-end').value;
+  PORTAL_SETTINGS.campusName=document.getElementById('set-campus').value;
+  PORTAL_SETTINGS.campusAddress=document.getElementById('set-addr').value;
+  showToast('Settings saved ✓');
+}
+function changePassword(){
+  const cur=document.getElementById('set-cur').value;
+  const nw=document.getElementById('set-new').value;
+  const cf=document.getElementById('set-conf').value;
+  if(cur!==PORTAL_SETTINGS.adminPasswordHash){showToast('Current password is wrong');return;}
+  if(nw.length<8){showToast('New password must be at least 8 characters');return;}
+  if(nw!==cf){showToast('Passwords do not match');return;}
+  PORTAL_SETTINGS.adminPasswordHash=nw;
+  document.getElementById('set-cur').value='';
+  document.getElementById('set-new').value='';
+  document.getElementById('set-conf').value='';
+  showToast('Password updated ✓');
+}
+
+// ═══════════════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════════════
+function showAddModal(){
+  document.getElementById('edit-id').value='';
+  document.getElementById('class-modal-title').textContent='Add Class';
+  document.getElementById('class-modal-btn').innerHTML='<i class="fa-solid fa-plus"></i> Add to Schedule';
+  document.getElementById('a-course').value='';
+  document.getElementById('a-code').value='';
+  document.getElementById('class-overlay').classList.add('open');
+}
+function closeClassModal(ev,force){if(force||(ev&&ev.target===document.getElementById('class-overlay')))document.getElementById('class-overlay').classList.remove('open');}
+
+function submitClassModal(){
+  const editId=document.getElementById('edit-id').value;
+  const day=parseInt(document.getElementById('a-day').value);
+  const start=document.getElementById('a-start').value;
+  const end=document.getElementById('a-end').value;
+  const roomId=document.getElementById('a-room').value;
+  const course=document.getElementById('a-course').value.trim();
+  const code=document.getElementById('a-code').value.trim();
+  const professor=document.getElementById('a-prof-sel').value;
+  const program=document.getElementById('a-prog-sel').value;
+  const semester=document.getElementById('a-sem').value.trim()||PORTAL_SETTINGS.semesterName;
+  if(!course||!code){alert('Course name and code are required.');return;}
+  if(t2m(start)>=t2m(end)){alert('End time must be after start time.');return;}
+  const conflict=SCHEDULE.find(s=>s.roomId===roomId&&s.day===day&&t2m(s.start)<t2m(end)&&t2m(s.end)>t2m(start)&&(!editId||s.id!==parseInt(editId)));
+  if(conflict){alert(`Room conflict! ${roomId} is booked for ${conflict.course} (${fmtT(conflict.start)}–${fmtT(conflict.end)}).`);return;}
+  if(editId){
+    const idx=SCHEDULE.findIndex(s=>s.id===parseInt(editId));
+    if(idx>=0)SCHEDULE[idx]={...SCHEDULE[idx],day,start,end,roomId,course,code,professor,program,semester};
+    showToast('Class updated ✓');
+  } else {
+    SCHEDULE.push({id:nextId(),day,start,end,roomId,course,code,professor,program,semester});
+    showToast('Class added ✓');
+  }
+  closeClassModal(null,true);
+  renderAdmSched();updateQuickStats();
+}
+
+function showAddRoomModal(){document.getElementById('room-add-overlay').classList.add('open');}
+function closeRoomAddModal(ev,force){if(force||(ev&&ev.target===document.getElementById('room-add-overlay')))document.getElementById('room-add-overlay').classList.remove('open');}
+function addRoom(){
+  const id=document.getElementById('nr-id').value.trim().toUpperCase();
+  const name=document.getElementById('nr-name').value.trim();
+  const floor=parseInt(document.getElementById('nr-floor').value);
+  const type=document.getElementById('nr-type').value;
+  const capacity=parseInt(document.getElementById('nr-cap').value);
+  const features=document.getElementById('nr-feat').value.split(',').map(f=>f.trim()).filter(Boolean);
+  if(!id||!name||!capacity){alert('ID, name, and capacity are required.');return;}
+  if(ROOMS.find(r=>r.id===id)){alert('Room ID already exists.');return;}
+  ROOMS.push({id,name,floor,type,capacity,features});
+  closeRoomAddModal(null,true);
+  renderAdmRooms();populateDropdowns();updateQuickStats();showToast('Room added ✓');
+}
+
+function showAddProfModal(){document.getElementById('prof-overlay').classList.add('open');}
+function closeProfModal(ev,force){if(force||(ev&&ev.target===document.getElementById('prof-overlay')))document.getElementById('prof-overlay').classList.remove('open');}
+function addProf(){
+  const name=document.getElementById('p-name').value.trim();
+  const dept=document.getElementById('p-dept').value.trim();
+  const email=document.getElementById('p-email').value.trim();
+  const phone=document.getElementById('p-phone').value.trim();
+  if(!name){alert('Name is required.');return;}
+  PROFESSORS.push({id:nextId(),name,dept,email,phone});
+  closeProfModal(null,true);
+  renderAdmProfs();populateDropdowns();updateQuickStats();showToast('Professor added ✓');
+}
+
+// ═══════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════
+let toastTmr;
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTmr);toastTmr=setTimeout(()=>t.classList.remove('show'),2800);}
+</script>
+</body>
+</html>
