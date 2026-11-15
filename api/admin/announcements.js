@@ -1,0 +1,49 @@
+// api/admin/announcements.js — POST / DELETE /api/admin/announcements
+const handler           = require('../../lib/http');
+const { validate }      = require('../../lib/http');
+const store             = require('../../lib/store');
+const { requireAdmin }  = require('../../lib/auth');
+
+const RULES = {
+  title:   { required: true, min: 3 },
+  msg:     { required: true, min: 5 },
+  type:    { required: true, in: ['info', 'warning', 'urgent'] },
+  expires: { required: true },
+};
+
+module.exports = handler({
+  // GET /api/admin/announcements — all announcements (active + expired)
+  GET(req, res) {
+    if (!requireAdmin(req, res)) return;
+    res.json({ announcements: store.getAnnouncements() });
+  },
+
+  // POST /api/admin/announcements — create an announcement
+  POST(req, res) {
+    if (!requireAdmin(req, res)) return;
+    const errors = validate(req.body, RULES);
+    if (errors) return res.status(400).json({ errors });
+
+    const today = new Date().toISOString().split('T')[0];
+    if (req.body.expires < today)
+      return res.status(400).json({ error: 'Expiry date must be today or in the future.' });
+
+    const ann = store.addAnnouncement({
+      title:   String(req.body.title),
+      msg:     String(req.body.msg),
+      type:    String(req.body.type),
+      expires: String(req.body.expires),
+    });
+    res.status(201).json({ announcement: ann });
+  },
+
+  // DELETE /api/admin/announcements?id=1 — remove an announcement
+  DELETE(req, res) {
+    if (!requireAdmin(req, res)) return;
+    const id = parseInt(req.query.id);
+    if (!id) return res.status(400).json({ error: 'id query param required' });
+    const ok = store.deleteAnnouncement(id);
+    if (!ok) return res.status(404).json({ error: 'Announcement not found' });
+    res.json({ deleted: true, id });
+  },
+});
