@@ -3,10 +3,10 @@
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" }
+        { "key": "X-Frame-Options",           "value": "DENY" },
+        { "key": "X-Content-Type-Options",    "value": "nosniff" },
+        { "key": "Referrer-Policy",           "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy",        "value": "camera=(), microphone=(), geolocation=()" }
       ]
     },
     {
@@ -17,9 +17,13 @@
     }
   ],
   "rewrites": [
-    { "source": "/api/rooms",              "destination": "/api/rooms.js" },
-    { "source": "/api/schedule",           "destination": "/api/schedule.js" },
-    { "source": "/api/admin/login",        "destination": "/api/admin/login.js" },
-    { "source": "/api/admin/schedule",     "destination": "/api/admin/schedule.js" }
+    { "source": "/api/rooms",                 "destination": "/api/rooms.js" },
+    { "source": "/api/schedule",              "destination": "/api/schedule.js" },
+    { "source": "/api/announcements",         "destination": "/api/announcements.js" },
+    { "source": "/api/admin/login",           "destination": "/api/admin/login.js" },
+    { "source": "/api/admin/schedule",        "destination": "/api/admin/schedule.js" },
+    { "source": "/api/admin/rooms",           "destination": "/api/admin/rooms.js" },
+    { "source": "/api/admin/professors",      "destination": "/api/admin/professors.js" },
+    { "source": "/api/admin/announcements",   "destination": "/api/admin/announcements.js" }
   ]
 }
