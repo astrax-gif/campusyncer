@@ -1,4 +1,4 @@
-(https://github.com/user-attachments/files/34872975/README.md)<div align="center">
+<div align="center">
 
 ![UE Portal](https://capsule-render.vercel.app/api?type=waving&color=0:0a0e27,50:1a237e,100:283593&height=220&section=header&text=UE%20Portal&fontSize=64&fontColor=ffffff&animation=fadeIn&fontAlignY=38&desc=Smart%20Workspace%20%26%20Tenant%20Portal%20%E2%80%94%20Dubai%20World%20Trade%20Centre&descSize=18&descAlignY=60)
 
