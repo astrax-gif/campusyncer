@@ -88,6 +88,7 @@
         <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-out btn-sm" onclick="exportCSV(curAdmDay)"><i class="fa-solid fa-file-csv"></i> Export Day</button>
           <button class="btn btn-out btn-sm" onclick="exportCSV(null)"><i class="fa-solid fa-download"></i> Export Full Week</button>
+          <button class="btn btn-out btn-sm" onclick="showImportModal()"><i class="fa-solid fa-file-import"></i> Import Schedule</button>
           <button class="btn btn-red btn-sm" onclick="showAddModal()"><i class="fa-solid fa-plus"></i> Add Class</button>
         </div>
       </div>
@@ -208,6 +209,41 @@
 
 <!-- ═══ MODALS ═══ -->
 
+<!-- Import Schedule -->
+<div class="overlay" id="imp-overlay" onclick="closeImportModal(event)">
+  <div class="modal" style="max-width:1120px">
+    <div class="modal-hdr" style="padding-bottom:14px">
+      <div>
+        <div class="m-rname" style="font-size:17px">Import Schedule</div>
+        <div style="font-size:12px;color:var(--txt-muted);margin-top:3px">Upload your normal weekly timetable (PDF, Word .docx, Excel or CSV). It is converted automatically, you check it, then import.</div>
+      </div>
+      <div class="m-close" onclick="closeImportModal(null,true)"><i class="fa-solid fa-xmark"></i></div>
+    </div>
+    <div style="padding:0 20px 20px">
+      <label class="imp-drop">
+        <i class="fa-solid fa-file-arrow-up"></i><span>Choose a file or drop it here</span>
+        <input type="file" id="imp-file" accept=".pdf,.docx,.doc,.xlsx,.xls,.csv" hidden onchange="impFile(this.files[0])">
+      </label>
+      <div style="text-align:right;margin-top:6px"><span class="see-all" onclick="impTemplate()">Download an example CSV</span></div>
+      <div id="imp-status"></div>
+      <div id="imp-preview" style="display:none">
+        <div class="tbl-wrap" style="max-height:48vh;overflow:auto;margin-top:12px">
+          <table class="dtbl">
+            <thead><tr><th></th><th>DAY</th><th>TIME</th><th>ROOM</th><th>COURSE</th><th>CODE</th><th>PROFESSOR</th><th>STATUS</th></tr></thead>
+            <tbody id="imp-body"></tbody>
+          </table>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:14px">
+          <div id="imp-sum" style="font-size:12.5px"></div>
+          <label style="font-size:12.5px"><input type="radio" name="imp-mode" value="append" checked onchange="impRefresh()"> Add to current schedule</label>
+          <label style="font-size:12.5px"><input type="radio" name="imp-mode" value="replace" onchange="impRefresh()"> Replace whole schedule</label>
+          <button class="btn btn-red" id="imp-go" style="margin-left:auto" onclick="impCommit()"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Add/Edit Class -->
 <div class="overlay" id="class-overlay" onclick="closeClassModal(event)">
   <div class="modal">
@@ -272,8 +308,7 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="ff"><label>Type</label>
           <select id="nr-type">
-            <option>Lecture Hall</option><option>Seminar Room</option><option>Tutorial Room</option>
-            <option>Computer Lab</option><option>Design Studio</option><option>Conference</option><option>Auditorium</option>
+            <option>Lecture Room</option><option>Lecture Theatre</option><option>Auditorium</option><option>PC Lab</option><option>Faculty Office</option><option>Library</option><option>Cafe</option>
           </select>
         </div>
         <div class="ff"><label>Capacity</label><input type="number" id="nr-cap" placeholder="e.g. 30" min="1"></div>
@@ -305,6 +340,10 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="import-schedule.js"></script>
 <script src="data.js"></script>
 <script>
 // ═══════════════════════════════════════════════
@@ -357,7 +396,7 @@ function updateQuickStats(){
 function populateDropdowns(){
   // Room select
   const rs=document.getElementById('a-room');rs.innerHTML='';
-  ROOMS.forEach(r=>{const o=document.createElement('option');o.value=r.id;o.textContent=`${r.id} — ${r.name} (Floor ${r.floor})`;rs.appendChild(o);});
+  ROOMS.filter(r=>r.bookable!==false&&!r.restricted&&!r.publicSpace).forEach(r=>{const o=document.createElement('option');o.value=r.id;o.textContent=`${r.id} — ${r.type} (${r.capacity} chairs)`;rs.appendChild(o);});
   // Professor select
   const ps=document.getElementById('a-prof-sel');ps.innerHTML='';
   PROFESSORS.forEach(p=>{const o=document.createElement('option');o.value=p.name;o.textContent=p.name;ps.appendChild(o);});
@@ -432,8 +471,8 @@ function delEntry(id){
 // ═══════════════════════════════════════════════
 function renderAdmRooms(){
   const {min}=getNow(),today=getToday();
-  const stC={occ:'#FECACA',free:'#BBF7D0',soon:'#FDE68A',empty:'var(--border)',maintenance:'#E5E7EB'};
-  const stL={occ:'In Session',free:'Free',soon:'Starting Soon',empty:'No class today',maintenance:'Maintenance'};
+  const stC={occ:'#FECACA',free:'#BBF7D0',soon:'#FDE68A',empty:'var(--border)',maintenance:'#E5E7EB',staff:'#FECACA',public:'#E0F2FE'};
+  const stL={occ:'In Session',free:'Free',soon:'Starting Soon',empty:'Free (no class today)',maintenance:'Maintenance',staff:'Staff only',public:'Public space'};
   document.getElementById('adm-rooms-body').innerHTML=ROOMS.map(r=>{
     const st=roomStatus(r.id,today,min);
     const isMaint=!!ROOM_MAINTENANCE[r.id];
@@ -661,7 +700,7 @@ function addRoom(){
   const features=document.getElementById('nr-feat').value.split(',').map(f=>f.trim()).filter(Boolean);
   if(!id||!name||!capacity){alert('ID, name, and capacity are required.');return;}
   if(ROOMS.find(r=>r.id===id)){alert('Room ID already exists.');return;}
-  ROOMS.push({id,name,floor,type,capacity,features});
+  ROOMS.push({id,name,floor,type,capacity,features,bookable:!['Faculty Office','Library','Cafe'].includes(type),restricted:type==='Faculty Office',publicSpace:['Library','Cafe'].includes(type)});
   closeRoomAddModal(null,true);
   renderAdmRooms();populateDropdowns();updateQuickStats();showToast('Room added ✓');
 }
@@ -685,5 +724,6 @@ function addProf(){
 let toastTmr;
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTmr);toastTmr=setTimeout(()=>t.classList.remove('show'),2800);}
 </script>
+<script src="import-ui.js"></script>
 </body>
 </html>

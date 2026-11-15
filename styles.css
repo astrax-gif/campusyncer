@@ -266,3 +266,41 @@ input,select,textarea{font-family:inherit}
   .adm-tabs{gap:4px}.a-tab{padding:5px 10px;font-size:11.5px}
 }
 @media print{.topbar,.finder,.overlay,.announce-banner{display:none!important}.app{padding:0}}
+
+
+/* ── Floor plan on dashboard ── */
+.fp-card{margin-bottom:22px;padding:18px}
+.fp-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.fp-head .legend{margin-left:auto}
+.fp-hint{font-size:11.5px;color:var(--txt-muted);text-align:center;margin:10px 0 4px}
+.free-head{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--txt-mid);margin:14px 0 10px;padding-top:14px;border-top:1px solid var(--border)}
+.free-count{background:var(--green-bg);color:var(--green);font-size:11.5px;font-weight:800;padding:2px 9px;border-radius:20px}
+.free-now{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.free-chip{display:flex;align-items:center;gap:12px;background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:10px;padding:10px 12px;cursor:pointer;transition:.12s}
+.free-chip:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.free-chip.soon{background:var(--yellow-bg);border-color:#FDE68A}
+.free-chip.merged{background:#EFF6FF;border-color:#BFDBFE}
+.fc-num{font-family:'Raleway',sans-serif;font-weight:900;font-size:19px;color:var(--green);min-width:54px}
+.free-chip.soon .fc-num{color:var(--yellow)}.free-chip.merged .fc-num{color:#1D4ED8;font-size:15px;min-width:70px}
+.fc-name{font-size:12px;font-weight:700;color:var(--txt)}
+.fc-meta{font-size:11px;color:var(--txt-muted)}
+.fc-until{font-size:11px;font-weight:600;color:var(--green)}
+.free-chip.soon .fc-until{color:var(--yellow)}.free-chip.merged .fc-until{color:#1D4ED8}
+
+/* ── Schedule row click + class modal ── */
+.sched-row{cursor:pointer}
+.c-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 20px 16px}
+.c-cell{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:10px 12px}
+.c-cell.wide{grid-column:span 2}
+.c-cell.big .i-val{font-family:'Raleway',sans-serif;font-weight:900;font-size:24px;color:var(--red)}
+.c-prog{height:7px;background:rgba(0,0,0,.08);border-radius:4px;margin-top:10px;overflow:hidden}
+.c-prog>div{height:100%;background:var(--red);border-radius:4px;transition:width .4s}
+
+
+/* ── Admin schedule import ── */
+.imp-drop{display:flex;align-items:center;justify-content:center;gap:10px;border:2px dashed var(--border);border-radius:10px;padding:22px;cursor:pointer;color:var(--txt-mid);font-size:13.5px;font-weight:600;transition:.15s}
+.imp-drop:hover{border-color:var(--red);color:var(--red);background:var(--red-bg)}
+.imp-msg{margin-top:12px;padding:10px 14px;border-radius:8px;font-size:12.5px;background:var(--bg);color:var(--txt-mid)}
+.imp-msg.ok{background:var(--green-bg);color:var(--green)}.imp-msg.err{background:var(--red-lt);color:var(--red)}
+.imp-in{font:inherit;font-size:12px;padding:5px 7px;border:1.5px solid var(--border);border-radius:6px;background:#fff;color:var(--txt)}
+.imp-in:focus{outline:none;border-color:var(--red)}
