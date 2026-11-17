@@ -245,7 +245,7 @@ function switchView(v){
 function renderDash(){
   const {min}=getNow(),today=getToday();
   let free=0,occ=0,soon=0;
-  bookableRooms().forEach(r=>{const st=roomStatus(r.id,today,min);if(st.status==='maintenance')return;if(st.status==='occ')occ++;else if(st.status==='soon')soon++;else free++;});
+  bookableRooms().forEach(r=>{const st=roomStatus(r.id,today,min);if(st.status==='maintenance')return;if(st.status==='occ'||st.status==='event')occ++;else if(st.status==='soon'||st.status==='booked')soon++;else free++;});
   document.getElementById('st-free').textContent=free;
   document.getElementById('st-occ').textContent=occ;
   document.getElementById('st-soon').textContent=soon;
@@ -298,9 +298,11 @@ function renderFP(){
     staff:{fill:'rgba(239,68,68,.22)',stroke:'#F87171',sw:2.5,glow:true},
     public:{fill:'rgba(56,189,248,.14)',stroke:'#38BDF8',sw:1.5,glow:false},
     maintenance:{fill:'',stroke:'#475569',sw:1,glow:false},
+    event:{fill:'rgba(245,158,11,.22)',stroke:'#F59E0B',sw:2.5,glow:true},
+    booked:{fill:'rgba(139,92,246,.18)',stroke:'#A78BFA',sw:2.5,glow:true},
   };
-  const tc={occ:'#CBD5E1',soon:'#FDE68A',free:'#A7F3D0',empty:'#A7F3D0',staff:'#FECACA',public:'#BAE6FD',maintenance:'#94A3B8'};
-  const dotC={occ:'#EF4444',soon:'#D97706',free:'#22C55E',empty:'#22C55E',maintenance:'#9CA3AF'};
+  const tc={occ:'#CBD5E1',soon:'#FDE68A',free:'#A7F3D0',empty:'#A7F3D0',staff:'#FECACA',public:'#BAE6FD',maintenance:'#94A3B8',event:'#FEF3C7',booked:'#EDE9FE'};
+  const dotC={occ:'#EF4444',soon:'#D97706',free:'#22C55E',empty:'#22C55E',maintenance:'#9CA3AF',event:'#F59E0B',booked:'#A78BFA'};
   const F='font-family="Inter,sans-serif" pointer-events="none"';
 
   let svg=`<defs>
@@ -375,7 +377,7 @@ function renderFP(){
       if(room.capacity>0&&fits(capOff)) svg+=`<text x="${midX}" y="${ry+capOff}" text-anchor="middle" font-size="9" fill="#94A3B8" ${F}>${room.capacity} chairs</text>`;
 
       if(rh>=86){
-        const pills={occ:['IN SESSION','#EF4444'],free:['FREE','#22C55E'],empty:['FREE','#22C55E'],soon:['SOON','#D97706'],staff:['STAFF ONLY','#DC2626']};
+        const pills={occ:['IN SESSION','#EF4444'],free:['FREE','#22C55E'],empty:['FREE','#22C55E'],soon:['SOON','#D97706'],staff:['STAFF ONLY','#DC2626'],event:['EVENT','#F59E0B'],booked:['BOOKED','#8B5CF6']};
         const pl=pills[st.status];
         const pillOff=rh<100?65:72;
         if(pl&&fits(pillOff+16)){
@@ -402,7 +404,7 @@ function renderFP(){
   MERGE_GROUPS.forEach(([a,b])=>{
     const ra=plan.rooms.find(r=>r[0]===a), rb=plan.rooms.find(r=>r[0]===b); if(!ra||!rb)return;
     const stA=roomStatus(a,today,min).status, stB=roomStatus(b,today,min).status;
-    const inUse=s=>['occ','soon'].includes(s);
+    const inUse=s=>['occ','soon','event'].includes(s);
     if(!inUse(stA)||!inUse(stB)) return; // wall indicator hidden unless both have an event
     const mx=(ra[1]+ra[3]+rb[1])/2, y1=ra[2]+4, y2=ra[2]+ra[4]-4;
     const total=(getRoom(a)?.capacity||0)+(getRoom(b)?.capacity||0);
@@ -422,7 +424,7 @@ function renderFreeNow(){
   const items=[];
   bookableRooms().forEach(r=>{
     const st=roomStatus(r.id,today,min);
-    if(st.status==='occ'||st.status==='maintenance')return;
+    if(['occ','maintenance','event','booked'].includes(st.status))return;
     const nxt=SCHEDULE.filter(s=>s.roomId===r.id&&s.day===today&&t2m(s.start)>min).sort((a,b)=>t2m(a.start)-t2m(b.start))[0];
     items.push({id:r.id,label:r.id,type:r.type,cap:r.capacity,nxt,gap:nxt?t2m(nxt.start)-min:null});
   });
@@ -447,8 +449,8 @@ function fpHover(id,event){
   const room=getRoom(id);if(!room)return;
   const {min}=getNow(),today=getToday();
   const st=roomStatus(id,today,min);
-  const stC={occ:'#F87171',soon:'#FCD34D',free:'#4ADE80',empty:'#4ADE80',staff:'#F87171',public:'#7DD3FC',maintenance:'#9CA3AF'};
-  const stL={occ:'In Session',soon:'Starting Soon',free:'Free Now',empty:'Free Now',staff:'Staff only · not for students',public:'Open to everyone',maintenance:'Under Maintenance'};
+  const stC={occ:'#F87171',soon:'#FCD34D',free:'#4ADE80',empty:'#4ADE80',staff:'#F87171',public:'#7DD3FC',maintenance:'#9CA3AF',event:'#FBBF24',booked:'#C4B5FD'};
+  const stL={occ:'In Session',soon:'Starting Soon',free:'Free Now',empty:'Free Now',staff:'Staff only · not for students',public:'Open to everyone',maintenance:'Under Maintenance',event:'Event Running',booked:'Booked for Event'};
   let html=`<strong style="font-size:13px">${room.name}</strong><br><span style="color:${stC[st.status]};font-weight:700;font-size:12px">${stL[st.status]}</span>`;
   if(st.status==='occ'&&st.entry){
     html+=`<div style="margin-top:5px;font-size:11.5px"><strong>${st.entry.code}</strong>: ${st.entry.course}</div>`;
@@ -494,6 +496,12 @@ function openRoom(id){
   } else if(st.status==='maintenance'){
     sb.className='m-status maint';
     sb.innerHTML=`<div class="st-title"><i class="fa-solid fa-wrench"></i> Under Maintenance</div><div style="font-size:12.5px;color:var(--txt-muted)">This room is currently unavailable. Contact admin for details.</div>`;
+  } else if(st.status==='event'){
+    sb.className='m-status soon';
+    sb.innerHTML=`<div class="st-title"><i class="fa-solid fa-calendar-star"></i> Event Running</div><div style="font-size:12.5px;color:var(--txt-muted)">An event is currently taking place in this room.</div>`;
+  } else if(st.status==='booked'){
+    sb.className='m-status maint';
+    sb.innerHTML=`<div class="st-title"><i class="fa-solid fa-calendar-check"></i> Booked for Event</div><div style="font-size:12.5px;color:var(--txt-muted)">This room is reserved for an upcoming event.</div>`;
   } else if(st.status==='occ'){
     const e=st.entry,rem=t2m(e.end)-min;
     sb.className='m-status occ';

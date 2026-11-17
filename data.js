@@ -26,6 +26,10 @@ const ROOMS = [
 // maintenance: set to true via admin to block a room
 let ROOM_MAINTENANCE = {};
 
+// Admin-set room status overrides (persisted in localStorage)
+// Values: 'free' | 'occ' | 'event' | 'booked' | 'maintenance'  — '' / absent = auto
+let ROOM_STATUS_OVERRIDES = {};
+
 // Rooms that can be opened into one big room (movable wall)
 const MERGE_GROUPS = [['204','205']];
 
@@ -169,6 +173,9 @@ function roomStatus(roomId, day, curMin){
   const room=getRoom(roomId);
   if(room && room.restricted) return {status:'staff',entry:null};
   if(room && (room.publicSpace || room.bookable===false)) return {status:'public',entry:null};
+  // Admin-set override takes priority over schedule (but not over staff/public)
+  const ov=ROOM_STATUS_OVERRIDES[roomId];
+  if(ov) return {status:ov, entry:null};
   if(ROOM_MAINTENANCE[roomId]) return {status:'maintenance',entry:null};
   const es=SCHEDULE.filter(s=>s.roomId===roomId&&s.day===day);
   const now=es.find(s=>t2m(s.start)<=curMin&&t2m(s.end)>curMin);
@@ -199,6 +206,7 @@ function saveAll(){
   try{
     localStorage.setItem(_STORE_KEY, JSON.stringify({
       rm: ROOM_MAINTENANCE,
+      ro: ROOM_STATUS_OVERRIDES,
       sc: SCHEDULE,
       an: ANNOUNCEMENTS,
       pr: PROFESSORS,
@@ -217,6 +225,11 @@ function loadAll(){
     if(d.rm){
       Object.keys(ROOM_MAINTENANCE).forEach(k => delete ROOM_MAINTENANCE[k]);
       Object.assign(ROOM_MAINTENANCE, d.rm);
+    }
+    // ROOM_STATUS_OVERRIDES
+    if(d.ro){
+      Object.keys(ROOM_STATUS_OVERRIDES).forEach(k => delete ROOM_STATUS_OVERRIDES[k]);
+      Object.assign(ROOM_STATUS_OVERRIDES, d.ro);
     }
     // Arrays – clear and re-fill in-place (avoids re-assignment)
     if(Array.isArray(d.sc)){ SCHEDULE.length=0;      SCHEDULE.push(...d.sc); }
