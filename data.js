@@ -24,7 +24,7 @@ const ROOMS = [
 ];
 
 // maintenance: set to true via admin to block a room
-const ROOM_MAINTENANCE = {};
+let ROOM_MAINTENANCE = {};
 
 // Rooms that can be opened into one big room (movable wall)
 const MERGE_GROUPS = [['204','205']];
@@ -178,4 +178,43 @@ function exportCSV(day){
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download=`ue-dubai-schedule${day?'-'+DAY_NAMES[day]:'full'}.csv`;
   a.click();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SHARED PERSISTENCE  (localStorage bridge between admin ↔ portal)
+// ═══════════════════════════════════════════════════════════════════
+const _STORE_KEY = 'UE_PORTAL_v1';
+
+function saveAll(){
+  try{
+    localStorage.setItem(_STORE_KEY, JSON.stringify({
+      rm: ROOM_MAINTENANCE,
+      sc: SCHEDULE,
+      an: ANNOUNCEMENTS,
+      pr: PROFESSORS,
+      ps: PORTAL_SETTINGS,
+      ni: _nextId,
+    }));
+  }catch(e){ console.warn('[UE] saveAll failed', e); }
+}
+
+function loadAll(){
+  try{
+    const raw = localStorage.getItem(_STORE_KEY);
+    if(!raw) return;
+    const d = JSON.parse(raw);
+    // ROOM_MAINTENANCE – clear and re-fill the object in-place
+    if(d.rm){
+      Object.keys(ROOM_MAINTENANCE).forEach(k => delete ROOM_MAINTENANCE[k]);
+      Object.assign(ROOM_MAINTENANCE, d.rm);
+    }
+    // Arrays – clear and re-fill in-place (avoids re-assignment)
+    if(Array.isArray(d.sc)){ SCHEDULE.length=0;      SCHEDULE.push(...d.sc); }
+    if(Array.isArray(d.an)){ ANNOUNCEMENTS.length=0;  ANNOUNCEMENTS.push(...d.an); }
+    if(Array.isArray(d.pr)){ PROFESSORS.length=0;     PROFESSORS.push(...d.pr); }
+    // Settings object – merge
+    if(d.ps) Object.assign(PORTAL_SETTINGS, d.ps);
+    // Next ID counter
+    if(d.ni) _nextId = d.ni;
+  }catch(e){ console.warn('[UE] loadAll failed', e); }
 }
