@@ -2,7 +2,7 @@
 const handler           = require('../../lib/http');
 const { validate }      = require('../../lib/http');
 const store             = require('../../lib/store');
-const { requireAdmin }  = require('../../lib/auth');
+const { requirePermission } = require('../../lib/auth');
 
 const RULES = {
   id:       { required: true, min: 1 },
@@ -15,13 +15,13 @@ const RULES = {
 module.exports = handler({
   // GET /api/admin/rooms — list all rooms (with maintenance flag)
   GET(req, res) {
-    if (!requireAdmin(req, res)) return;
+    if (!requirePermission(req, res, 'rooms')) return;
     res.json({ rooms: store.getRooms() });
   },
 
   // POST /api/admin/rooms — add a new room
   POST(req, res) {
-    if (!requireAdmin(req, res)) return;
+    if (!requirePermission(req, res, 'rooms')) return;
     const errors = validate(req.body, RULES);
     if (errors) return res.status(400).json({ errors });
 
@@ -45,7 +45,7 @@ module.exports = handler({
 
   // PUT /api/admin/rooms?id=R101 — update a room (partial patch)
   PUT(req, res) {
-    if (!requireAdmin(req, res)) return;
+    if (!requirePermission(req, res, 'rooms')) return;
     const id = req.query.id;
     if (!id) return res.status(400).json({ error: 'id query param required' });
 
@@ -65,7 +65,7 @@ module.exports = handler({
 
   // DELETE /api/admin/rooms?id=R101 — remove a room
   DELETE(req, res) {
-    if (!requireAdmin(req, res)) return;
+    if (!requirePermission(req, res, 'rooms')) return;
     const id = req.query.id;
     if (!id) return res.status(400).json({ error: 'id query param required' });
     const ok = store.deleteRoom(id.toUpperCase());

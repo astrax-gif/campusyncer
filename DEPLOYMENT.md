@@ -26,16 +26,42 @@ SSH into your new server:
 ssh root@YOUR_VULTR_IP
 ```
 
-Then run the setup script:
+Clone the repository so the setup script can install the site's Nginx configuration:
 ```bash
-# Option A — if you've already cloned the repo on the server
+apt update && apt install -y git
+git clone https://github.com/astrax-gif/Ue-portal.git /var/www/ue-portal
+cd /var/www/ue-portal
 bash scripts/vultr-setup.sh
-
-# Option B — run directly from GitHub (easier)
-bash <(curl -s https://raw.githubusercontent.com/astrax-gif/Ue-portal/main/scripts/vultr-setup.sh)
 ```
 
-The script installs Nginx, creates `/var/www/ue-portal/`, configures the firewall, and prints your next steps.
+The script installs Nginx, Node.js 20, and PM2, configures the firewall and Nginx, and prints your next steps.
+
+If this VPS was configured before the API proxy was added, copy the `/api/` location block from `nginx/ue-portal.conf` into `/etc/nginx/sites-available/ue-portal`, preserving your existing `server_name`, then run `nginx -t && systemctl reload nginx`.
+
+The admin and staff login API must run alongside Nginx. Create a private environment file for the API and deploy workflow:
+
+```bash
+sudo sh -c 'cat > /etc/ue-portal.env' <<'EOF'
+NODE_ENV=production
+PORT=3000
+ADMIN_PASSWORD=replace-with-a-unique-password
+ADMIN_SECRET=replace-with-a-long-random-secret
+STAFF_STORE_FILE=/var/lib/ue-portal/staff-users.json
+ADMIN_PASSWORD_STORE_FILE=/var/lib/ue-portal/admin-password.json
+EOF
+sudo chmod 600 /etc/ue-portal.env
+sudo mkdir -p /var/lib/ue-portal
+sudo chown "$USER":"$USER" /var/lib/ue-portal
+cd /var/www/ue-portal
+npm ci --omit=dev
+set -a
+. /etc/ue-portal.env
+set +a
+pm2 start scripts/dev-server.js --name ue-portal-api
+pm2 save
+```
+
+Replace both example credentials before starting the server. Keep `/etc/ue-portal.env`, `/var/lib/ue-portal/staff-users.json`, and `/var/lib/ue-portal/admin-password.json` private; back up the two data files. Start PM2 as the account that owns and can read these files. The deployment workflow reads the environment file, updates the application, then restarts the API without overwriting your Nginx domain configuration.
 
 ---
 
@@ -43,17 +69,16 @@ The script installs Nginx, creates `/var/www/ue-portal/`, configures the firewal
 
 Go to your repo on GitHub → **Settings → Secrets and variables → Actions → New repository secret**.
 
-Add all 5 secrets:
+Add these deployment secrets:
 
 | Secret name | Value |
 |---|---|
 | `VULTR_HOST` | Your server IP, e.g. `149.28.xxx.xxx` |
-| `VULTR_USER` | `root` (or your deploy user) |
+| `VULTR_USER` | `root` (or the user configured on the VPS) |
 | `VULTR_SSH_KEY` | Your **private** SSH key — `cat ~/.ssh/id_rsa` |
-| `VITE_SUPABASE_URL` | Your Supabase URL |
-| `VITE_SUPABASE_ANON_KEY` | Your Supabase anon key |
 
 > **Never** paste your private key anywhere except GitHub Secrets.
+> `VULTR_USERNAME` and `VULTR_PASSWORD` are also accepted for existing deployments; an SSH key is preferred.
 
 ---
 

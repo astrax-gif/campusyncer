@@ -99,7 +99,6 @@ let PORTAL_SETTINGS = {
   semesterEnd: '2026-12-20',
   campusName: 'UE Dubai Campus',
   campusAddress: 'One Central, Dubai World Trade Centre, Dubai, UAE',
-  adminPasswordHash: 'admin2026', // plain for demo; use bcrypt in production
 };
 
 let _nextId = 40;

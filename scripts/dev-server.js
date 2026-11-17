@@ -13,18 +13,27 @@ const PORT   = process.env.PORT || 3000;
 
 // ─── Route table (mirrors vercel.json rewrites) ───────────────────────────
 const ROUTES = {
-  'GET  /api/rooms':                  require('../api/rooms'),
-  'GET  /api/schedule':               require('../api/schedule'),
-  'GET  /api/announcements':          require('../api/announcements'),
+  'GET /api/rooms':                   require('../api/rooms'),
+  'GET /api/schedule':                require('../api/schedule'),
+  'GET /api/announcements':           require('../api/announcements'),
   'POST /api/admin/login':            require('../api/admin/login'),
+  'POST /api/admin/logout':           require('../api/admin/logout'),
+  'POST /api/admin/password':         require('../api/admin/password'),
+  'GET /api/admin/staff':             require('../api/admin/staff'),
+  'POST /api/admin/staff':            require('../api/admin/staff'),
+  'DELETE /api/admin/staff':          require('../api/admin/staff'),
+  'GET /api/admin/rooms':             require('../api/admin/rooms'),
+  'GET /api/admin/professors':        require('../api/admin/professors'),
+  'PUT /api/admin/professors':        require('../api/admin/professors'),
   'POST /api/admin/schedule':         require('../api/admin/schedule'),
-  'PUT  /api/admin/schedule':         require('../api/admin/schedule'),
+  'PUT /api/admin/schedule':          require('../api/admin/schedule'),
   'DELETE /api/admin/schedule':       require('../api/admin/schedule'),
   'POST /api/admin/rooms':            require('../api/admin/rooms'),
-  'PUT  /api/admin/rooms':            require('../api/admin/rooms'),
+  'PUT /api/admin/rooms':             require('../api/admin/rooms'),
   'DELETE /api/admin/rooms':          require('../api/admin/rooms'),
   'POST /api/admin/professors':       require('../api/admin/professors'),
   'DELETE /api/admin/professors':     require('../api/admin/professors'),
+  'GET /api/admin/announcements':     require('../api/admin/announcements'),
   'POST /api/admin/announcements':    require('../api/admin/announcements'),
   'DELETE /api/admin/announcements':  require('../api/admin/announcements'),
 };
@@ -51,15 +60,16 @@ function buildReq(nodeReq, parsedUrl, body) {
 
 function buildRes(nodeRes) {
   const headers = {};
+  const nativeSetHeader = nodeRes.setHeader.bind(nodeRes);
   nodeRes.status = (code) => { nodeRes.statusCode = code; return nodeRes; };
   nodeRes.json   = (data) => {
     if (!nodeRes.headersSent) {
-      nodeRes.setHeader('Content-Type', 'application/json');
-      Object.entries(headers).forEach(([k, v]) => nodeRes.setHeader(k, v));
+      nativeSetHeader('Content-Type', 'application/json');
+      Object.entries(headers).forEach(([k, v]) => nativeSetHeader(k, v));
     }
     nodeRes.end(JSON.stringify(data));
   };
-  nodeRes.setHeader = (k, v) => { headers[k] = v; nodeRes.setHeader(k, v); return nodeRes; };
+  nodeRes.setHeader = (k, v) => { headers[k] = v; nativeSetHeader(k, v); return nodeRes; };
   nodeRes.end = nodeRes.end.bind(nodeRes);
   return nodeRes;
 }

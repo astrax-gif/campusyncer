@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Raleway:wght@700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="styles.css?v=20261115">
+<link rel="stylesheet" href="styles.css?v=20261117">
 </head>
 <body>
 
@@ -15,7 +15,7 @@
   <div class="topbar-stripe"></div>
   <div class="topbar-inner">
     <div class="brand" onclick="location.href='index.html'">
-      <div class="brand-badge">UE</div>
+      <img class="brand-logo" src="https://onlinecampus.ue-germany.de/gfx/ue/logo.svg" alt="UE logo">
       <div class="brand-text">
         <div class="brand-name">Admin Panel</div>
         <div class="brand-sub">UE Dubai Campus</div>
@@ -34,15 +34,19 @@
   <div id="adm-login">
     <div class="adm-login">
       <div style="display:flex;justify-content:center;margin-bottom:22px">
-        <div class="brand-badge" style="width:52px;height:52px;font-size:22px;border-radius:12px">UE</div>
+        <img class="brand-logo" src="https://onlinecampus.ue-germany.de/gfx/ue/logo.svg" alt="UE logo" style="width:170px">
       </div>
-      <h2>Admin Access</h2>
+      <div class="login-switch" role="tablist" aria-label="Login type">
+        <button class="login-switch-btn active" id="admin-login-tab" type="button" onclick="setLoginType('admin')">Admin login</button>
+        <button class="login-switch-btn" id="staff-login-tab" type="button" onclick="setLoginType('staff')">Staff login</button>
+      </div>
+      <h2 id="login-title">Admin Access</h2>
       <p>University of Europe for Applied Sciences · Dubai Campus</p>
-      <div class="ff"><label>Username</label><input type="text" id="au" value="admin" placeholder="admin"></div>
-      <div class="ff"><label>Password</label><input type="password" id="ap" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="ff"><label>Username</label><input type="text" id="au" value="admin" placeholder="Username" autocomplete="username"></div>
+      <div class="ff"><label>Password</label><input type="password" id="ap" placeholder="Enter password" autocomplete="current-password"></div>
       <button class="btn btn-red btn-full mt" style="margin-top:14px" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> Sign In</button>
-      <div class="login-err" id="login-err">Incorrect credentials. Demo password: <code>admin2026</code></div>
-      <div style="font-size:10.5px;color:var(--txt-muted);text-align:center;margin-top:12px">Demo password: <code>admin2026</code></div>
+      <div class="login-err" id="login-err" role="alert"></div>
+      <div id="admin-demo-hint" style="font-size:10.5px;color:var(--txt-muted);text-align:center;margin-top:12px">Sign in with your administrator account.</div>
     </div>
   </div>
 
@@ -52,7 +56,7 @@
     <div class="adm-top">
       <h2><i class="fa-solid fa-shield-halved" style="color:var(--red)"></i> Admin Dashboard</h2>
       <div style="display:flex;gap:8px;align-items:center">
-        <span style="font-size:12px;color:var(--txt-muted)">Logged in as <strong>admin</strong></span>
+        <span style="font-size:12px;color:var(--txt-muted)">Logged in as <strong id="adm-user-label">admin</strong></span>
         <button class="btn btn-out btn-sm" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
       </div>
     </div>
@@ -67,12 +71,13 @@
 
     <!-- Tabs -->
     <div class="adm-tabs" id="adm-tabs">
-      <div class="a-tab active" data-at="schedule" onclick="setTab('schedule')"><i class="fa-solid fa-calendar-days"></i> Schedule</div>
-      <div class="a-tab" data-at="rooms"    onclick="setTab('rooms')"><i class="fa-solid fa-door-open"></i> Rooms</div>
-      <div class="a-tab" data-at="profs"    onclick="setTab('profs')"><i class="fa-solid fa-chalkboard-user"></i> Professors</div>
-      <div class="a-tab" data-at="announce" onclick="setTab('announce')"><i class="fa-solid fa-bullhorn"></i> Announcements</div>
-      <div class="a-tab" data-at="reports"  onclick="setTab('reports')"><i class="fa-solid fa-chart-bar"></i> Reports</div>
-      <div class="a-tab" data-at="settings" onclick="setTab('settings')"><i class="fa-solid fa-gear"></i> Settings</div>
+      <div class="a-tab active" data-at="schedule" data-permission="schedule" onclick="setTab('schedule')"><i class="fa-solid fa-calendar-days"></i> Schedule</div>
+      <div class="a-tab" data-at="rooms" data-permission="rooms" onclick="setTab('rooms')"><i class="fa-solid fa-door-open"></i> Rooms</div>
+      <div class="a-tab" data-at="profs" data-permission="professors" onclick="setTab('profs')"><i class="fa-solid fa-chalkboard-user"></i> Professors</div>
+      <div class="a-tab" data-at="announce" data-permission="announcements" onclick="setTab('announce')"><i class="fa-solid fa-bullhorn"></i> Announcements</div>
+      <div class="a-tab" data-at="reports" data-permission="reports" onclick="setTab('reports')"><i class="fa-solid fa-chart-bar"></i> Reports</div>
+      <div class="a-tab" data-at="settings" data-permission="admin" onclick="setTab('settings')"><i class="fa-solid fa-gear"></i> Settings</div>
+      <div class="a-tab" data-at="staff" data-permission="admin" onclick="setTab('staff')"><i class="fa-solid fa-user-shield"></i> Staff Access</div>
     </div>
 
     <!-- ══ TAB: SCHEDULE ══ -->
@@ -193,12 +198,41 @@
         <div class="card">
           <div class="card-title"><i class="fa-solid fa-lock" style="color:var(--red)"></i> Security</div>
           <div class="ff"><label>Current Password</label><input type="password" id="set-cur" placeholder="Current password"></div>
-          <div class="ff"><label>New Password</label><input type="password" id="set-new" placeholder="New password (min 8 chars)"></div>
+          <div class="ff"><label>New Password</label><input type="password" id="set-new" placeholder="New password (10–128 chars)" maxlength="128"></div>
           <div class="ff"><label>Confirm Password</label><input type="password" id="set-conf" placeholder="Confirm new password"></div>
           <button class="btn btn-red btn-sm" onclick="changePassword()"><i class="fa-solid fa-key"></i> Update Password</button>
           <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
             <div class="card-title" style="margin-bottom:10px"><i class="fa-solid fa-info-circle" style="color:var(--txt-muted)"></i> Portal Info</div>
             <div style="font-size:12.5px;color:var(--txt-muted);line-height:1.8" id="set-info"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="at-staff" style="display:none">
+          <div class="two-col">
+            <div class="card">
+              <div class="card-title"><i class="fa-solid fa-user-plus" style="color:var(--red)"></i> Create staff account</div>
+              <div class="ff"><label for="staff-name">Full name</label><input id="staff-name" type="text" autocomplete="name"></div>
+              <div class="ff"><label for="staff-title">Role or title</label><input id="staff-title" type="text" placeholder="e.g. Student Counselor"></div>
+              <div class="ff"><label for="staff-username">Username</label><input id="staff-username" type="text" autocomplete="off"></div>
+              <div class="ff"><label for="staff-password">Temporary password (10–128 characters)</label><input id="staff-password" type="password" autocomplete="new-password" maxlength="128"></div>
+              <div class="ff">
+                <label>Permissions</label>
+                <div class="staff-permissions">
+                  <label><input type="checkbox" value="schedule"> Manage schedule</label>
+                  <label><input type="checkbox" value="rooms"> Manage rooms</label>
+                  <label><input type="checkbox" value="professors"> Manage professors</label>
+                  <label><input type="checkbox" value="announcements"> Manage announcements</label>
+                  <label><input type="checkbox" value="reports"> View reports</label>
+                </div>
+              </div>
+              <button class="btn btn-red btn-sm" onclick="createStaffAccount()"><i class="fa-solid fa-user-plus"></i> Create account</button>
+            </div>
+            <div class="card">
+              <div class="card-title"><i class="fa-solid fa-users" style="color:var(--txt-muted)"></i> Staff accounts</div>
+              <div id="staff-list"><div class="empty-state">Loading staff accounts…</div></div>
+            </div>
           </div>
         </div>
       </div>
@@ -349,7 +383,7 @@
 // ═══════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════
-let admLoggedIn=false, curAdmDay=1, curAdmTab='schedule';
+let admLoggedIn=false, curAdmDay=1, curAdmTab='schedule', loginType='admin', admUser=null;
 
 // ═══════════════════════════════════════════════
 // CLOCK
@@ -363,28 +397,67 @@ setInterval(updateClock,10000); updateClock();
 // ═══════════════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════════════
-function doLogin(){
-  if(document.getElementById('ap').value===PORTAL_SETTINGS.adminPasswordHash){
+function setLoginType(type){
+  loginType=type;
+  document.getElementById('admin-login-tab').classList.toggle('active',type==='admin');
+  document.getElementById('staff-login-tab').classList.toggle('active',type==='staff');
+  document.getElementById('login-title').textContent=type==='admin'?'Admin Access':'Staff Access';
+  document.getElementById('au').value=type==='admin'?'admin':'';
+  document.getElementById('admin-demo-hint').style.display=type==='admin'?'':'none';
+  document.getElementById('login-err').style.display='none';
+}
+async function apiRequest(path,options){
+  const response=await fetch(path,{credentials:'same-origin',...options,headers:{'Content-Type':'application/json',...(options&&options.headers||{})}});
+  const data=await response.json();
+  if(!response.ok)throw new Error(data.error||`Request failed (${response.status})`);
+  return data;
+}
+async function doLogin(){
+  const error=document.getElementById('login-err');
+  error.style.display='none';
+  try{
+    const result=await apiRequest('/api/admin/login',{method:'POST',body:JSON.stringify({
+      username:document.getElementById('au').value,
+      password:document.getElementById('ap').value,
+      loginType
+    })});
+    admUser=result.user;
     admLoggedIn=true;
     document.getElementById('adm-login').style.display='none';
     document.getElementById('adm-dash').style.display='';
     initDash();
-  } else {
-    document.getElementById('login-err').style.display='block';
+  }catch(err){
+    error.textContent=err.message.includes('Failed to fetch')
+      ? 'Login requires the portal server. Start it with npm start, then open http://localhost:3000/admin.html.'
+      : err.message;
+    error.style.display='block';
   }
 }
-function doLogout(){admLoggedIn=false;document.getElementById('adm-login').style.display='';document.getElementById('adm-dash').style.display='none';document.getElementById('ap').value='';}
+async function doLogout(){
+  try{await apiRequest('/api/admin/logout',{method:'POST'});}catch(err){console.error('Logout request failed:',err);}
+  admLoggedIn=false;admUser=null;
+  document.getElementById('adm-login').style.display='';
+  document.getElementById('adm-dash').style.display='none';
+  document.getElementById('ap').value='';
+}
 document.getElementById('ap').addEventListener('keydown',e=>e.key==='Enter'&&doLogin());
 
 // ═══════════════════════════════════════════════
 // DASHBOARD INIT
 // ═══════════════════════════════════════════════
 function initDash(){
+  const isAdmin=admUser.role==='admin';
+  const permissions=new Set(admUser.permissions||[]);
+  document.getElementById('adm-user-label').textContent=isAdmin?'admin':`${admUser.displayName} · ${admUser.title}`;
+  document.querySelectorAll('#adm-tabs .a-tab').forEach(tab=>{
+    const permission=tab.dataset.permission;
+    tab.style.display=permission==='admin'?(isAdmin?'':'none'):(isAdmin||permissions.has(permission)?'':'none');
+  });
   updateQuickStats();
   populateDropdowns();
   renderAdmSched();
-  loadSettings();
-  setTab('schedule');
+  const firstTab=[...document.querySelectorAll('#adm-tabs .a-tab')].find(tab=>tab.style.display!=='none');
+  setTab(firstTab?firstTab.dataset.at:'schedule');
 }
 function updateQuickStats(){
   document.getElementById('as-rooms').textContent=ROOMS.length;
@@ -406,9 +479,16 @@ function populateDropdowns(){
 // TABS
 // ═══════════════════════════════════════════════
 function setTab(t){
+  const isAdmin=admUser&&admUser.role==='admin';
+  const tab=document.querySelector(`#adm-tabs .a-tab[data-at="${t}"]`);
+  if(!tab||tab.style.display==='none'||(tab.dataset.permission==='admin'&&!isAdmin)){
+    const allowed=document.querySelector('#adm-tabs .a-tab:not([style*="display: none"])');
+    if(allowed&&allowed.dataset.at!==t)return setTab(allowed.dataset.at);
+    return;
+  }
   curAdmTab=t;
   document.querySelectorAll('.a-tab').forEach(e=>e.classList.toggle('active',e.dataset.at===t));
-  ['schedule','rooms','profs','announce','reports','settings'].forEach(id=>{
+  ['schedule','rooms','profs','announce','reports','settings','staff'].forEach(id=>{
     document.getElementById(`at-${id}`).style.display=id===t?'':'none';
   });
   if(t==='rooms')    renderAdmRooms();
@@ -416,6 +496,62 @@ function setTab(t){
   if(t==='announce') renderAnnouncements();
   if(t==='reports')  renderReports();
   if(t==='settings') loadSettings();
+  if(t==='staff')    loadStaffAccounts();
+}
+
+async function loadStaffAccounts(){
+  const container=document.getElementById('staff-list');
+  container.textContent='Loading staff accounts…';
+  try{
+    const {staff}=await apiRequest('/api/admin/staff');
+    container.replaceChildren();
+    if(staff.length===0){container.textContent='No staff accounts have been created.';return;}
+    staff.forEach(user=>{
+      const row=document.createElement('div');
+      row.className='staff-account';
+      const details=document.createElement('div');
+      const name=document.createElement('strong');
+      name.textContent=user.displayName;
+      const info=document.createElement('div');
+      info.className='staff-account-meta';
+      info.textContent=`${user.title} · @${user.username} · ${user.permissions.join(', ')}`;
+      details.append(name,info);
+      const remove=document.createElement('button');
+      remove.type='button';
+      remove.className='btn btn-out btn-sm';
+      remove.textContent='Remove';
+      remove.addEventListener('click',()=>deleteStaffAccount(user.id));
+      row.append(details,remove);
+      container.appendChild(row);
+    });
+  }catch(err){
+    container.textContent=err.message;
+  }
+}
+async function createStaffAccount(){
+  const permissions=[...document.querySelectorAll('.staff-permissions input:checked')].map(input=>input.value);
+  const account={
+    displayName:document.getElementById('staff-name').value.trim(),
+    title:document.getElementById('staff-title').value.trim(),
+    username:document.getElementById('staff-username').value.trim(),
+    password:document.getElementById('staff-password').value,
+    permissions
+  };
+  try{
+    await apiRequest('/api/admin/staff',{method:'POST',body:JSON.stringify(account)});
+    ['staff-name','staff-title','staff-username','staff-password'].forEach(id=>document.getElementById(id).value='');
+    document.querySelectorAll('.staff-permissions input').forEach(input=>input.checked=false);
+    await loadStaffAccounts();
+    showToast('Staff account created');
+  }catch(err){showToast(err.message);}
+}
+async function deleteStaffAccount(id){
+  if(!confirm('Remove this staff account?'))return;
+  try{
+    await apiRequest(`/api/admin/staff?id=${encodeURIComponent(id)}`,{method:'DELETE'});
+    await loadStaffAccounts();
+    showToast('Staff account removed');
+  }catch(err){showToast(err.message);}
 }
 
 // ═══════════════════════════════════════════════
@@ -635,18 +771,18 @@ function saveSettings(){
   PORTAL_SETTINGS.campusAddress=document.getElementById('set-addr').value;
   showToast('Settings saved ✓');
 }
-function changePassword(){
+async function changePassword(){
   const cur=document.getElementById('set-cur').value;
   const nw=document.getElementById('set-new').value;
   const cf=document.getElementById('set-conf').value;
-  if(cur!==PORTAL_SETTINGS.adminPasswordHash){showToast('Current password is wrong');return;}
-  if(nw.length<8){showToast('New password must be at least 8 characters');return;}
+  if(nw.length<10){showToast('New password must be at least 10 characters');return;}
   if(nw!==cf){showToast('Passwords do not match');return;}
-  PORTAL_SETTINGS.adminPasswordHash=nw;
-  document.getElementById('set-cur').value='';
-  document.getElementById('set-new').value='';
-  document.getElementById('set-conf').value='';
-  showToast('Password updated ✓');
+  try{
+    await apiRequest('/api/admin/password',{method:'POST',body:JSON.stringify({currentPassword:cur,newPassword:nw})});
+    ['set-cur','set-new','set-conf'].forEach(id=>document.getElementById(id).value='');
+    showToast('Password updated. Please sign in again.');
+    await doLogout();
+  }catch(err){showToast(err.message);}
 }
 
 // ═══════════════════════════════════════════════

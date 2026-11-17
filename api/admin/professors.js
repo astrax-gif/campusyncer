@@ -2,7 +2,7 @@
 const handler           = require('../../lib/http');
 const { validate }      = require('../../lib/http');
 const store             = require('../../lib/store');
-const { requireAdmin }  = require('../../lib/auth');
+const { requirePermission } = require('../../lib/auth');
 
 const RULES = {
   name: { required: true, min: 2 },
@@ -11,7 +11,7 @@ const RULES = {
 module.exports = handler({
   // GET /api/admin/professors — list all professors with weekly hours
   GET(req, res) {
-    if (!requireAdmin(req, res)) return;
+    if (!requirePermission(req, res, 'professors')) return;
     const schedule = store.getSchedule();
     const t2m = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
 
@@ -26,7 +26,7 @@ module.exports = handler({
 
   // POST /api/admin/professors — add a professor
   POST(req, res) {
-    if (!requireAdmin(req, res)) return;
+    if (!requirePermission(req, res, 'professors')) return;
     const errors = validate(req.body, RULES);
     if (errors) return res.status(400).json({ errors });
 
@@ -41,7 +41,7 @@ module.exports = handler({
 
   // PUT /api/admin/professors?id=3 — update a professor
   PUT(req, res) {
-    if (!requireAdmin(req, res)) return;
+    if (!requirePermission(req, res, 'professors')) return;
     const id = parseInt(req.query.id);
     if (!id) return res.status(400).json({ error: 'id query param required' });
 
@@ -59,7 +59,7 @@ module.exports = handler({
 
   // DELETE /api/admin/professors?id=3 — remove a professor
   DELETE(req, res) {
-    if (!requireAdmin(req, res)) return;
+    if (!requirePermission(req, res, 'professors')) return;
     const id = parseInt(req.query.id);
     if (!id) return res.status(400).json({ error: 'id query param required' });
     const ok = store.deleteProfessor(id);

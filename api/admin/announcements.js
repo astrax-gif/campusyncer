@@ -2,7 +2,7 @@
 const handler           = require('../../lib/http');
 const { validate }      = require('../../lib/http');
 const store             = require('../../lib/store');
-const { requireAdmin }  = require('../../lib/auth');
+const { requirePermission } = require('../../lib/auth');
 
 const RULES = {
   title:   { required: true, min: 3 },
@@ -14,13 +14,13 @@ const RULES = {
 module.exports = handler({
   // GET /api/admin/announcements — all announcements (active + expired)
   GET(req, res) {
-    if (!requireAdmin(req, res)) return;
+    if (!requirePermission(req, res, 'announcements')) return;
     res.json({ announcements: store.getAnnouncements() });
   },
 
   // POST /api/admin/announcements — create an announcement
   POST(req, res) {
-    if (!requireAdmin(req, res)) return;
+    if (!requirePermission(req, res, 'announcements')) return;
     const errors = validate(req.body, RULES);
     if (errors) return res.status(400).json({ errors });
 
@@ -39,7 +39,7 @@ module.exports = handler({
 
   // DELETE /api/admin/announcements?id=1 — remove an announcement
   DELETE(req, res) {
-    if (!requireAdmin(req, res)) return;
+    if (!requirePermission(req, res, 'announcements')) return;
     const id = parseInt(req.query.id);
     if (!id) return res.status(400).json({ error: 'id query param required' });
     const ok = store.deleteAnnouncement(id);

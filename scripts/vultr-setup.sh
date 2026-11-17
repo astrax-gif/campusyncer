@@ -19,8 +19,10 @@ NC='\033[0m'
 echo -e "${BLUE}[1/6] Updating system packages...${NC}"
 apt update && apt upgrade -y
 
-echo -e "${BLUE}[2/6] Installing Nginx...${NC}"
-apt install -y nginx
+echo -e "${BLUE}[2/6] Installing Nginx, Node.js, and PM2...${NC}"
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt install -y nginx nodejs git
+npm install --global pm2
 systemctl enable nginx
 systemctl start nginx
 
@@ -30,6 +32,7 @@ chown -R www-data:www-data /var/www/ue-portal
 chmod -R 755 /var/www/ue-portal
 
 # Put a placeholder index.html so Nginx doesn't 404 before first deploy
+if [ ! -f /var/www/ue-portal/index.html ]; then
 cat > /var/www/ue-portal/index.html <<'HTML'
 <!doctype html>
 <html><head><title>UE Portal — Deploying…</title></head>
@@ -38,6 +41,7 @@ cat > /var/www/ue-portal/index.html <<'HTML'
   <p>First deployment in progress. Check back in a minute.</p>
 </body></html>
 HTML
+fi
 
 echo -e "${BLUE}[4/6] Configuring Nginx...${NC}"
 # Copy the config (assumes you cloned the repo — otherwise paste manually)
