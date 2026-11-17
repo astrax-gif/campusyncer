@@ -312,14 +312,14 @@ function renderFP(){
   </defs>`;
 
   // Full-canvas dark background + irregular building polygon
-  svg+=`<rect x="0" y="0" width="${plan.w}" height="${plan.h}" fill="#070D1A"/>`;
+  svg+=`<rect x="0" y="0" width="${plan.w}" height="${plan.h}" fill="none"/>`;
   if(plan.polyOuter){
-    svg+=`<polygon points="${plan.polyOuter}" fill="#0B1220" stroke="#334155" stroke-width="2.5" stroke-dasharray="8 6"/>`;
+    svg+=`<polygon points="${plan.polyOuter}" fill="transparent" stroke="#334155" stroke-width="2.5" stroke-dasharray="8 6"/>`;
   }
 
   plan.struct.forEach(([type,x,y,w,h,label])=>{
     if(type==='outer'){
-      if(!plan.polyOuter) svg+=`<rect x="${x+2}" y="${y+2}" width="${w-4}" height="${h-4}" rx="6" fill="#0B1220" stroke="#334155" stroke-width="2" stroke-dasharray="7 6"/>`;
+      if(!plan.polyOuter) svg+=`<rect x="${x+2}" y="${y+2}" width="${w-4}" height="${h-4}" rx="6" fill="transparent" stroke="#334155" stroke-width="2" stroke-dasharray="7 6"/>`;
     } else if(type==='corridor'){
       svg+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#162033"/>`;
       if(label) svg+=`<text x="${x+w/2}" y="${y+h/2+4}" text-anchor="middle" font-size="11" font-weight="600" fill="#64748B" ${F} letter-spacing="2">${label.toUpperCase()}</text>`;
@@ -414,7 +414,7 @@ function renderFP(){
   });
 
   fpSvg.setAttribute('viewBox',`0 0 ${plan.w} ${plan.h}`);
-  fpSvg.setAttribute('style',`width:100%;max-width:${plan.w}px;display:block;margin:0 auto`);
+  fpSvg.setAttribute('style',`width:100%;height:100%;max-width:${plan.w}px;display:block;margin:0 auto`);
   fpSvg.innerHTML=svg;
 }
 
@@ -661,3 +661,4 @@ init();
 </script>
 </body>
 </html>
+
