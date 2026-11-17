@@ -106,7 +106,7 @@ input,select,textarea{font-family:inherit}
 .ci-room{font-size:12px;font-weight:700;color:var(--txt-mid);background:var(--bg);padding:2px 8px;border-radius:4px;flex-shrink:0;white-space:nowrap}
 
 /* ── FLOOR PLAN ─────── */
-.fp-wrap{position:relative}
+.fp-wrap{position:relative;margin:0 -18px}
 .rooms-ctrl{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
 .floor-tabs{display:flex;background:#fff;border:1.5px solid var(--border);border-radius:8px;overflow:hidden}
 .f-tab{padding:7px 18px;font-size:12.5px;font-weight:500;color:var(--txt-muted);cursor:pointer;border-right:1.5px solid var(--border);transition:.12s}
@@ -118,7 +118,7 @@ input,select,textarea{font-family:inherit}
 .leg-dot{width:9px;height:9px;border-radius:50%}
 .fp-container{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);padding:16px;overflow:hidden;position:relative}
 .fp-floor-label{font-size:11px;font-weight:700;color:var(--txt-muted);letter-spacing:.05em;margin-bottom:10px;text-transform:uppercase}
-#fp-svg{width:100%;max-width:860px;height:auto;display:block;cursor:default;background:transparent}
+#fp-svg{width:100%;max-width:none;height:auto;display:block;cursor:default;background:transparent}
 .fp-room{transition:opacity .15s}
 #fp-tt{display:none;position:absolute;background:#1F2937;color:#fff;border-radius:8px;padding:11px 14px;font-size:12px;line-height:1.5;z-index:50;pointer-events:none;max-width:230px;box-shadow:0 8px 24px rgba(0,0,0,.2)}
 
