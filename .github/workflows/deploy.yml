@@ -53,7 +53,12 @@ jobs:
             set -a
             . /etc/ue-portal.env
             set +a
-            pm2 restart ue-portal-api --update-env || pm2 start scripts/dev-server.js --name ue-portal-api
+            pm2 delete ue-backend || true
+            if pm2 describe ue-portal-api >/dev/null 2>&1; then
+              pm2 restart ue-portal-api --update-env
+            else
+              pm2 start scripts/dev-server.js --name ue-portal-api
+            fi
             pm2 save
             python3 - <<'PY'
             from pathlib import Path
