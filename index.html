@@ -594,8 +594,9 @@ let toastTmr;
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTmr);toastTmr=setTimeout(()=>t.classList.remove('show'),2800);}
 
 function init(){
+  loadAll(); // pick up any changes made in admin
   updateClock();
-  setInterval(()=>{updateClock();if(curView==='dashboard')renderDash();if(curView==='schedule')renderSchedTable();if(curClassId)renderClass();},30000);
+  setInterval(()=>{loadAll();updateClock();if(curView==='dashboard')renderDash();if(curView==='schedule')renderSchedTable();if(curClassId)renderClass();},30000);
   renderAnnouncements();
   renderDash();
   document.getElementById('f-time').value=m2t(getNow().min);
