@@ -112,7 +112,7 @@
       </div>
       <div class="tbl-wrap">
         <table class="dtbl">
-          <thead><tr><th>ID</th><th>NAME</th><th>FLOOR</th><th>TYPE</th><th>CAPACITY</th><th>FEATURES</th><th>STATUS NOW</th><th>MAINTENANCE</th></tr></thead>
+          <thead><tr><th>ID</th><th>NAME</th><th>FLOOR</th><th>TYPE</th><th>CAPACITY</th><th>FEATURES</th><th>STATUS NOW</th><th>STATUS OVERRIDE</th></tr></thead>
           <tbody id="adm-rooms-body"></tbody>
         </table>
       </div>
@@ -446,6 +446,7 @@ document.getElementById('ap').addEventListener('keydown',e=>e.key==='Enter'&&doL
 // DASHBOARD INIT
 // ═══════════════════════════════════════════════
 function initDash(){
+  loadAll(); // restore persisted data
   const isAdmin=admUser.role==='admin';
   const permissions=new Set(admUser.permissions||[]);
   document.getElementById('adm-user-label').textContent=isAdmin?'admin':`${admUser.displayName} · ${admUser.title}`;
@@ -599,6 +600,7 @@ function editEntry(id){
 function delEntry(id){
   if(!confirm('Remove this class from the schedule?'))return;
   SCHEDULE=SCHEDULE.filter(s=>s.id!==id);
+  saveAll();
   renderAdmSched();updateQuickStats();showToast('Class removed');
 }
 
@@ -607,11 +609,19 @@ function delEntry(id){
 // ═══════════════════════════════════════════════
 function renderAdmRooms(){
   const {min}=getNow(),today=getToday();
-  const stC={occ:'#FECACA',free:'#BBF7D0',soon:'#FDE68A',empty:'var(--border)',maintenance:'#E5E7EB',staff:'#FECACA',public:'#E0F2FE'};
-  const stL={occ:'In Session',free:'Free',soon:'Starting Soon',empty:'Free (no class today)',maintenance:'Maintenance',staff:'Staff only',public:'Public space'};
+  const stC={occ:'#FECACA',free:'#BBF7D0',soon:'#FDE68A',empty:'var(--border)',maintenance:'#E5E7EB',staff:'#FECACA',public:'#E0F2FE',event:'#FED7AA',booked:'#E9D5FF'};
+  const stL={occ:'In Session',free:'Free',soon:'Starting Soon',empty:'Free (no class today)',maintenance:'Maintenance',staff:'Staff only',public:'Public space',event:'Event Running',booked:'Booked for Event'};
   document.getElementById('adm-rooms-body').innerHTML=ROOMS.map(r=>{
     const st=roomStatus(r.id,today,min);
-    const isMaint=!!ROOM_MAINTENANCE[r.id];
+    const ov=ROOM_STATUS_OVERRIDES[r.id]||'';
+    const selOpts=[
+      ['','🔄 Auto (follow schedule)'],
+      ['free','🟢 Free'],
+      ['occ','🔴 Occupied'],
+      ['event','🟠 Event Running'],
+      ['booked','🟣 Booked for Event'],
+      ['maintenance','🔧 Maintenance'],
+    ].map(([v,lbl])=>`<option value="${v}"${ov===v?' selected':''}>${lbl}</option>`).join('');
     return`<tr>
       <td style="font-weight:800">${r.id}</td>
       <td>${r.name}</td>
@@ -619,21 +629,27 @@ function renderAdmRooms(){
       <td>${r.type}</td>
       <td>${r.capacity}</td>
       <td style="font-size:11px;color:var(--txt-muted)">${(r.features||[]).join(', ')||'—'}</td>
-      <td><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;background:${isMaint?'#E5E7EB':stC[st.status]}">${isMaint?'Maintenance':stL[st.status]}</span></td>
+      <td><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;background:${stC[st.status]||'var(--border)'}">${stL[st.status]||st.status}${ov?' ⚡':''}</span></td>
       <td>
-        <label class="toggle-wrap" onclick="toggleMaint('${r.id}')">
-          <div class="toggle ${isMaint?'on':''}" id="tog-${r.id}"></div>
-          <span style="font-size:11.5px;color:var(--txt-muted)">${isMaint?'On':'Off'}</span>
-        </label>
+        <select style="font-size:12px;padding:4px 6px;border-radius:6px;border:1px solid var(--border);background:var(--bg-card);color:var(--txt-base);cursor:pointer"
+          onchange="setRoomOverride('${r.id}',this.value)">${selOpts}</select>
       </td>
     </tr>`;
   }).join('');
 }
+function setRoomOverride(id, status){
+  if(status){ ROOM_STATUS_OVERRIDES[id]=status; }
+  else { delete ROOM_STATUS_OVERRIDES[id]; }
+  saveAll();
+  renderAdmRooms();
+  const labels={free:'Free',occ:'Occupied',event:'Event Running',booked:'Booked for Event',maintenance:'Maintenance','':`Auto`};
+  showToast(`${id} → ${labels[status]||status}`);
+}
 function toggleMaint(id){
   if(ROOM_MAINTENANCE[id]) delete ROOM_MAINTENANCE[id];
   else ROOM_MAINTENANCE[id]=true;
+  saveAll();
   renderAdmRooms();
-  showToast(`${id} maintenance ${ROOM_MAINTENANCE[id]?'enabled':'disabled'}`);
 }
 
 // ═══════════════════════════════════════════════
@@ -698,9 +714,10 @@ function addAnnouncement(){
   ANNOUNCEMENTS.push({id:nextId(),title,msg,type,created:new Date().toISOString().split('T')[0],expires:exp});
   document.getElementById('ann-title').value='';
   document.getElementById('ann-msg').value='';
+  saveAll();
   renderAnnouncements();updateQuickStats();showToast('Announcement posted');
 }
-function delAnn(id){if(!confirm('Delete this announcement?'))return;ANNOUNCEMENTS=ANNOUNCEMENTS.filter(a=>a.id!==id);renderAnnouncements();updateQuickStats();showToast('Announcement removed');}
+function delAnn(id){if(!confirm('Delete this announcement?'))return;ANNOUNCEMENTS=ANNOUNCEMENTS.filter(a=>a.id!==id);saveAll();renderAnnouncements();updateQuickStats();showToast('Announcement removed');}
 
 // ═══════════════════════════════════════════════
 // TAB 5 — REPORTS
@@ -769,6 +786,7 @@ function saveSettings(){
   PORTAL_SETTINGS.semesterEnd=document.getElementById('set-end').value;
   PORTAL_SETTINGS.campusName=document.getElementById('set-campus').value;
   PORTAL_SETTINGS.campusAddress=document.getElementById('set-addr').value;
+  saveAll();
   showToast('Settings saved ✓');
 }
 async function changePassword(){
@@ -821,6 +839,7 @@ function submitClassModal(){
     SCHEDULE.push({id:nextId(),day,start,end,roomId,course,code,professor,program,semester});
     showToast('Class added ✓');
   }
+  saveAll();
   closeClassModal(null,true);
   renderAdmSched();updateQuickStats();
 }
@@ -837,6 +856,7 @@ function addRoom(){
   if(!id||!name||!capacity){alert('ID, name, and capacity are required.');return;}
   if(ROOMS.find(r=>r.id===id)){alert('Room ID already exists.');return;}
   ROOMS.push({id,name,floor,type,capacity,features,bookable:!['Faculty Office','Library','Cafe'].includes(type),restricted:type==='Faculty Office',publicSpace:['Library','Cafe'].includes(type)});
+  saveAll();
   closeRoomAddModal(null,true);
   renderAdmRooms();populateDropdowns();updateQuickStats();showToast('Room added ✓');
 }
@@ -850,6 +870,7 @@ function addProf(){
   const phone=document.getElementById('p-phone').value.trim();
   if(!name){alert('Name is required.');return;}
   PROFESSORS.push({id:nextId(),name,dept,email,phone});
+  saveAll();
   closeProfModal(null,true);
   renderAdmProfs();populateDropdowns();updateQuickStats();showToast('Professor added ✓');
 }

@@ -24,7 +24,11 @@ const ROOMS = [
 ];
 
 // maintenance: set to true via admin to block a room
-const ROOM_MAINTENANCE = {};
+let ROOM_MAINTENANCE = {};
+
+// Admin-set room status overrides (persisted in localStorage)
+// Values: 'free' | 'occ' | 'event' | 'booked' | 'maintenance'  — '' / absent = auto
+let ROOM_STATUS_OVERRIDES = {};
 
 // Rooms that can be opened into one big room (movable wall)
 const MERGE_GROUPS = [['204','205']];
@@ -107,31 +111,29 @@ function nextId() { return _nextId++; }
 // ─── Floor plan layout data ───────────────────────────
 const FLOOR_LAYOUTS = {
   1: {
-    w:1000, h:450,
-    label:'Ground Floor Plan · UE Dubai',
-    struct:[
-      ['outer',    0,   0, 1000, 450, null],
-      ['corridor', 5, 205,  990,  50, 'Main Corridor'],
-      ['util',   868, 205,  127,  50, 'Entrance'],
+    w: 1000, h: 450,
+    label: 'Ground Floor Plan · UE Dubai',
+    struct: [
+      ['outer', 0, 0, 1000, 450, null],
+      ['corridor', 5, 205, 990, 50, 'Main Corridor'],
+      ['util', 868, 205, 127, 50, 'Entrance'],
     ],
-    rooms:[
-      // top row
-      ['202',  10,  15, 230, 185],
-      ['204', 243,  15, 130, 185],
-      ['205', 376,  15, 130, 185],
-      ['209', 509,  15, 120, 185],
-      ['210', 632,  15, 115, 185],
-      ['215', 750,  15, 115, 185],
-      ['216', 868,  15, 122, 185],
-      // bottom row
-      ['DHL', 10,  260, 210, 180],
+    rooms: [
+      ['202', 10, 15, 230, 185],
+      ['204', 243, 15, 130, 185],
+      ['205', 376, 15, 130, 185],
+      ['209', 509, 15, 120, 185],
+      ['210', 632, 15, 115, 185],
+      ['215', 750, 15, 115, 185],
+      ['216', 868, 15, 122, 185],
+      ['DHL', 10, 260, 210, 180],
       ['206', 223, 260, 100, 180],
       ['207', 326, 260, 100, 180],
       ['208', 429, 260, 100, 180],
       ['211', 532, 260, 100, 180],
       ['213', 635, 260, 115, 180],
       ['214', 753, 260, 115, 180],
-      ['CAFE',871, 260, 119, 180],
+      ['CAFE', 871, 260, 119, 180],
     ],
   },
 };
@@ -154,11 +156,13 @@ function fmtDur(mins){
   const h=Math.floor(mins/60), m=mins%60;
   return h>0 ? (m? `${h}h ${m}m` : `${h}h`) : `${m} min`;
 }
-
 function roomStatus(roomId, day, curMin){
   const room=getRoom(roomId);
   if(room && room.restricted) return {status:'staff',entry:null};
   if(room && (room.publicSpace || room.bookable===false)) return {status:'public',entry:null};
+  // Admin-set override takes priority over schedule (but not over staff/public)
+  const ov=ROOM_STATUS_OVERRIDES[roomId];
+  if(ov) return {status:ov, entry:null};
   if(ROOM_MAINTENANCE[roomId]) return {status:'maintenance',entry:null};
   const es=SCHEDULE.filter(s=>s.roomId===roomId&&s.day===day);
   const now=es.find(s=>t2m(s.start)<=curMin&&t2m(s.end)>curMin);
@@ -178,4 +182,49 @@ function exportCSV(day){
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download=`ue-dubai-schedule${day?'-'+DAY_NAMES[day]:'full'}.csv`;
   a.click();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SHARED PERSISTENCE  (localStorage bridge between admin ↔ portal)
+// ═══════════════════════════════════════════════════════════════════
+const _STORE_KEY = 'UE_PORTAL_v1';
+
+function saveAll(){
+  try{
+    localStorage.setItem(_STORE_KEY, JSON.stringify({
+      rm: ROOM_MAINTENANCE,
+      ro: ROOM_STATUS_OVERRIDES,
+      sc: SCHEDULE,
+      an: ANNOUNCEMENTS,
+      pr: PROFESSORS,
+      ps: PORTAL_SETTINGS,
+      ni: _nextId,
+    }));
+  }catch(e){ console.warn('[UE] saveAll failed', e); }
+}
+
+function loadAll(){
+  try{
+    const raw = localStorage.getItem(_STORE_KEY);
+    if(!raw) return;
+    const d = JSON.parse(raw);
+    // ROOM_MAINTENANCE – clear and re-fill the object in-place
+    if(d.rm){
+      Object.keys(ROOM_MAINTENANCE).forEach(k => delete ROOM_MAINTENANCE[k]);
+      Object.assign(ROOM_MAINTENANCE, d.rm);
+    }
+    // ROOM_STATUS_OVERRIDES
+    if(d.ro){
+      Object.keys(ROOM_STATUS_OVERRIDES).forEach(k => delete ROOM_STATUS_OVERRIDES[k]);
+      Object.assign(ROOM_STATUS_OVERRIDES, d.ro);
+    }
+    // Arrays – clear and re-fill in-place (avoids re-assignment)
+    if(Array.isArray(d.sc)){ SCHEDULE.length=0;      SCHEDULE.push(...d.sc); }
+    if(Array.isArray(d.an)){ ANNOUNCEMENTS.length=0;  ANNOUNCEMENTS.push(...d.an); }
+    if(Array.isArray(d.pr)){ PROFESSORS.length=0;     PROFESSORS.push(...d.pr); }
+    // Settings object – merge
+    if(d.ps) Object.assign(PORTAL_SETTINGS, d.ps);
+    // Next ID counter
+    if(d.ni) _nextId = d.ni;
+  }catch(e){ console.warn('[UE] loadAll failed', e); }
 }

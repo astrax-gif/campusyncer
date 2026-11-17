@@ -245,7 +245,7 @@ function switchView(v){
 function renderDash(){
   const {min}=getNow(),today=getToday();
   let free=0,occ=0,soon=0;
-  bookableRooms().forEach(r=>{const st=roomStatus(r.id,today,min);if(st.status==='maintenance')return;if(st.status==='occ')occ++;else if(st.status==='soon')soon++;else free++;});
+  bookableRooms().forEach(r=>{const st=roomStatus(r.id,today,min);if(st.status==='maintenance')return;if(st.status==='occ'||st.status==='event')occ++;else if(st.status==='soon'||st.status==='booked')soon++;else free++;});
   document.getElementById('st-free').textContent=free;
   document.getElementById('st-occ').textContent=occ;
   document.getElementById('st-soon').textContent=soon;
@@ -298,9 +298,11 @@ function renderFP(){
     staff:{fill:'#FEE2E2',stroke:'#DC2626',sw:1.5},
     public:{fill:'#E0F2FE',stroke:'#0284C7',sw:1.5},
     maintenance:{fill:'',stroke:'#9CA3AF',sw:1.5},
+    event:{fill:'#FFEDD5',stroke:'#EA580C',sw:1.5},
+    booked:{fill:'#EDE9FE',stroke:'#7C3AED',sw:1.5},
   };
-  const tc={occ:'#991B1B',soon:'#92400E',free:'#166534',empty:'#166534',staff:'#991B1B',public:'#075985',maintenance:'#4B5563'};
-  const dotC={occ:'#EF4444',soon:'#D97706',free:'#22C55E',empty:'#22C55E',maintenance:'#9CA3AF'};
+  const tc={occ:'#991B1B',soon:'#92400E',free:'#166534',empty:'#166534',staff:'#991B1B',public:'#075985',maintenance:'#4B5563',event:'#9A3412',booked:'#5B21B6'};
+  const dotC={occ:'#EF4444',soon:'#D97706',free:'#22C55E',empty:'#22C55E',maintenance:'#9CA3AF',event:'#EA580C',booked:'#7C3AED'};
   const F='font-family="Inter,sans-serif" pointer-events="none"';
 
   let svg=`<defs>
@@ -309,13 +311,29 @@ function renderFP(){
   </defs>`;
 
   plan.struct.forEach(([type,x,y,w,h,label])=>{
-    if(type==='outer') svg+=`<rect x="${x+2}" y="${y+2}" width="${w-4}" height="${h-4}" rx="3" fill="none" stroke="#D1D5DB" stroke-width="1.5"/>`;
-    else if(type==='corridor'){
+    if(type==='outer'){
+      svg+=`<rect x="${x+2}" y="${y+2}" width="${w-4}" height="${h-4}" rx="3" fill="none" stroke="#D1D5DB" stroke-width="1.5"/>`;
+    } else if(type==='corridor'){
       svg+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#F3F4F6"/>`;
-      if(label) svg+=`<text x="${x+w/2-60}" y="${y+h/2+4}" text-anchor="middle" font-size="11" font-weight="600" fill="#6B7280" ${F} letter-spacing="2">${label.toUpperCase()}</text>`;
+      if(label) svg+=`<text x="${x+w/2}" y="${y+h/2+4}" text-anchor="middle" font-size="11" font-weight="600" fill="#6B7280" ${F} letter-spacing="2">${label.toUpperCase()}</text>`;
+    } else if(type==='corridor-v'){
+      svg+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#F3F4F6"/>`;
+      if(label) svg+=`<text x="${x+w/2}" y="${y+h/2}" text-anchor="middle" font-size="9" font-weight="600" fill="#6B7280" ${F} letter-spacing="1.5" transform="rotate(-90,${x+w/2},${y+h/2})">${label.toUpperCase()}</text>`;
+    } else if(type==='studio'){
+      svg+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#F9FAFB" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="6 4"/>`;
+      if(label) svg+=`<text x="${x+w/2}" y="${y+h/2+6}" text-anchor="middle" font-size="${w>150?16:12}" font-weight="800" fill="#6B7280" ${F} letter-spacing="2">${label.toUpperCase()}</text>`;
     } else if(type==='util'){
       svg+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#hatch)" stroke="#D1D5DB"/>`;
       if(label) svg+=`<text x="${x+w/2}" y="${y+h/2+4}" text-anchor="middle" font-size="10" font-weight="700" fill="#4B5563" ${F} letter-spacing="1">${label.toUpperCase()}</text>`;
+    } else if(type==='door'){
+      const isV=w==='v';
+      if(isV){
+        svg+=`<rect x="${x-5}" y="${y-22}" width="11" height="44" rx="5" fill="#DCFCE7" stroke="#16A34A" stroke-width="1"/>`;
+        if(label) svg+=`<text x="${x+16}" y="${y+4}" text-anchor="start" font-size="8" font-weight="700" fill="#166534" ${F}>${label.toUpperCase()}</text>`;
+      } else {
+        svg+=`<rect x="${x-22}" y="${y-5}" width="44" height="11" rx="5" fill="#DCFCE7" stroke="#16A34A" stroke-width="1"/>`;
+        if(label) svg+=`<text x="${x}" y="${y-9}" text-anchor="middle" font-size="8" font-weight="700" fill="#166534" ${F}>${label.toUpperCase()}</text>`;
+      }
     }
   });
 
@@ -331,39 +349,62 @@ function renderFP(){
     const isNum=/^\d+$/.test(id);
     const big=isNum?id:(id==='DHL'?'DHL':'CAFÉ');
     const sub=isNum?room.type:(id==='DHL'?'Library':'Open Space');
-    svg+=`<text x="${midX}" y="${ry+44}" text-anchor="middle" font-size="${isNum?26:22}" font-weight="800" fill="${tc[st.status]||'#E2E8F0'}" ${F}>${big}</text>`;
-    svg+=`<text x="${midX}" y="${ry+62}" text-anchor="middle" font-size="10" font-weight="600" fill="#4B5563" ${F}>${sub}</text>`;
-    if(room.capacity>0) svg+=`<text x="${midX}" y="${ry+77}" text-anchor="middle" font-size="10" fill="#6B7280" ${F}>${room.capacity} chairs</text>`;
+    // Helper: true if text at offset dy fits inside the room rect
+    const fits=dy=>ry+dy < y+h-4;
 
-    const pills={occ:['IN SESSION','#EF4444'],free:['FREE','#22C55E'],empty:['FREE','#22C55E'],soon:['STARTING SOON','#D97706'],staff:['STAFF ONLY','#DC2626']};
-    const pl=pills[st.status];
-    if(pl){
-      const lw=pl[0].length*6.4+18;
-      svg+=`<rect x="${midX-lw/2}" y="${ry+90}" width="${lw}" height="18" rx="9" fill="${pl[1]}" ${F}/>`;
-      svg+=`<text x="${midX}" y="${ry+102.5}" text-anchor="middle" font-size="8.5" font-weight="800" fill="#fff" letter-spacing="0.6" ${F}>${pl[0]}</text>`;
-    }
-    if(st.status==='staff') svg+=`<text x="${midX}" y="${ry+128}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#991B1B" ${F}>Not for students</text>`;
-    if(st.status==='maintenance') svg+=`<text x="${midX}" y="${ry+98}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#4B5563" ${F}>MAINTENANCE</text>`;
-    if((st.status==='occ'||st.status==='soon')&&st.entry){
-      svg+=`<text x="${midX}" y="${ry+128}" text-anchor="middle" font-size="10" font-weight="700" fill="#374151" ${F}>${st.entry.code}</text>`;
-      const line=st.status==='occ'?`ends in ${fmtDur(t2m(st.entry.end)-min)}`:`starts in ${fmtDur(t2m(st.entry.start)-min)}`;
-      svg+=`<text x="${midX}" y="${ry+142}" text-anchor="middle" font-size="9" fill="#6B7280" ${F}>${line}</text>`;
+    if(rh<70){
+      // Tiny rooms (CAFE): just ID centred
+      svg+=`<text x="${midX}" y="${ry+rh/2+7}" text-anchor="middle" font-size="${rw>80?20:16}" font-weight="800" fill="${tc[st.status]||'#E2E8F0'}" ${F}>${big}</text>`;
+      if(fits(rh/2+21)) svg+=`<text x="${midX}" y="${ry+rh/2+21}" text-anchor="middle" font-size="9" fill="#4B5563" ${F}>${sub}</text>`;
+    } else {
+      // All other rooms: scale text to room height
+      const bigFz=rh<100?20:24;
+      const idOff=rh<100?26:30;
+      svg+=`<text x="${midX}" y="${ry+idOff}" text-anchor="middle" font-size="${bigFz}" font-weight="800" fill="${tc[st.status]||'#E2E8F0'}" ${F}>${big}</text>`;
+      const typeOff=rh<100?42:46;
+      if(fits(typeOff)) svg+=`<text x="${midX}" y="${ry+typeOff}" text-anchor="middle" font-size="9.5" font-weight="600" fill="#4B5563" ${F}>${sub}</text>`;
+      const capOff=rh<100?55:60;
+      if(room.capacity>0&&fits(capOff)) svg+=`<text x="${midX}" y="${ry+capOff}" text-anchor="middle" font-size="9" fill="#6B7280" ${F}>${room.capacity} chairs</text>`;
+
+      if(rh>=86){
+        const pills={occ:['IN SESSION','#EF4444'],free:['FREE','#22C55E'],empty:['FREE','#22C55E'],soon:['SOON','#D97706'],staff:['STAFF ONLY','#DC2626'],event:['EVENT','#EA580C'],booked:['BOOKED','#7C3AED']};
+        const pl=pills[st.status];
+        const pillOff=rh<100?65:72;
+        if(pl&&fits(pillOff+16)){
+          const lw=Math.min(pl[0].length*6.4+18,rw-8);
+          svg+=`<rect x="${midX-lw/2}" y="${ry+pillOff}" width="${lw}" height="16" rx="8" fill="${pl[1]}" ${F}/>`;
+          svg+=`<text x="${midX}" y="${ry+pillOff+11}" text-anchor="middle" font-size="8" font-weight="800" fill="#fff" letter-spacing="0.5" ${F}>${pl[0]}</text>`;
+        }
+        if(st.status==='staff'&&fits(pillOff+22)) svg+=`<text x="${midX}" y="${ry+pillOff+22}" text-anchor="middle" font-size="8.5" font-weight="700" fill="#991B1B" ${F}>Staff only</text>`;
+        if(st.status==='maintenance'&&fits(pillOff+22)) svg+=`<text x="${midX}" y="${ry+pillOff+22}" text-anchor="middle" font-size="8.5" font-weight="700" fill="#4B5563" ${F}>MAINT.</text>`;
+      }
+      if((st.status==='occ'||st.status==='soon')&&st.entry){
+        const codeOff=rh<100?90:100;
+        if(fits(codeOff)) svg+=`<text x="${midX}" y="${ry+codeOff}" text-anchor="middle" font-size="9" font-weight="700" fill="#374151" ${F}>${st.entry.code}</text>`;
+        const timeOff=codeOff+13;
+        if(fits(timeOff)){
+          const line=st.status==='occ'?`ends ${fmtDur(t2m(st.entry.end)-min)}`:`in ${fmtDur(t2m(st.entry.start)-min)}`;
+          svg+=`<text x="${midX}" y="${ry+timeOff}" text-anchor="middle" font-size="8.5" fill="#6B7280" ${F}>${line}</text>`;
+        }
+      }
     }
   });
 
-  // movable walls (rooms that can be opened into one)
+  // Movable wall 204+205: only shown when BOTH rooms are actively in use at the same time
   MERGE_GROUPS.forEach(([a,b])=>{
     const ra=plan.rooms.find(r=>r[0]===a), rb=plan.rooms.find(r=>r[0]===b); if(!ra||!rb)return;
+    const stA=roomStatus(a,today,min).status, stB=roomStatus(b,today,min).status;
+    const inUse=s=>['occ','soon','event'].includes(s);
+    if(!inUse(stA)||!inUse(stB)) return; // wall indicator hidden unless both have an event
     const mx=(ra[1]+ra[3]+rb[1])/2, y1=ra[2]+4, y2=ra[2]+ra[4]-4;
-    svg+=`<line x1="${mx}" y1="${y1}" x2="${mx}" y2="${y2}" stroke="#6B7280" stroke-width="2.5" stroke-dasharray="6 4" ${F}/>`;
     const total=(getRoom(a)?.capacity||0)+(getRoom(b)?.capacity||0);
-    const both=['free','empty'].includes(roomStatus(a,today,min).status)&&['free','empty'].includes(roomStatus(b,today,min).status);
-    svg+=`<rect x="${mx-88}" y="${y2-20}" width="176" height="16" rx="8" fill="#fff" stroke="${both?'#16A34A':'#9CA3AF'}" ${F}/>`;
-    svg+=`<text x="${mx}" y="${y2-8.5}" text-anchor="middle" font-size="8.5" font-weight="700" fill="${both?'#166534':'#4B5563'}" ${F}>↔ Wall opens · ${a}+${b} = ${total} chairs</text>`;
+    svg+=`<line x1="${mx}" y1="${y1}" x2="${mx}" y2="${y2}" stroke="#7C3AED" stroke-width="2.5" stroke-dasharray="6 4" ${F}/>`;
+    svg+=`<rect x="${mx-110}" y="${y2-20}" width="220" height="16" rx="8" fill="#fff" stroke="#7C3AED" ${F}/>`;
+    svg+=`<text x="${mx}" y="${y2-8.5}" text-anchor="middle" font-size="8.5" font-weight="700" fill="#5B21B6" ${F}>↔ WALL OPEN · ${a}+${b} = ${total} chairs combined</text>`;
   });
 
   fpSvg.setAttribute('viewBox',`0 0 ${plan.w} ${plan.h}`);
-  fpSvg.setAttribute('style','width:100%;max-width:860px;display:block;margin:0 auto');
+  fpSvg.setAttribute('style','width:100%;height:auto;max-width:860px;display:block;margin:0 auto');
   fpSvg.innerHTML=svg;
 }
 
@@ -373,7 +414,7 @@ function renderFreeNow(){
   const items=[];
   bookableRooms().forEach(r=>{
     const st=roomStatus(r.id,today,min);
-    if(st.status==='occ'||st.status==='maintenance')return;
+    if(['occ','maintenance','event','booked'].includes(st.status))return;
     const nxt=SCHEDULE.filter(s=>s.roomId===r.id&&s.day===today&&t2m(s.start)>min).sort((a,b)=>t2m(a.start)-t2m(b.start))[0];
     items.push({id:r.id,label:r.id,type:r.type,cap:r.capacity,nxt,gap:nxt?t2m(nxt.start)-min:null});
   });
@@ -398,8 +439,8 @@ function fpHover(id,event){
   const room=getRoom(id);if(!room)return;
   const {min}=getNow(),today=getToday();
   const st=roomStatus(id,today,min);
-  const stC={occ:'#F87171',soon:'#FCD34D',free:'#4ADE80',empty:'#4ADE80',staff:'#F87171',public:'#7DD3FC',maintenance:'#9CA3AF'};
-  const stL={occ:'In Session',soon:'Starting Soon',free:'Free Now',empty:'Free Now',staff:'Staff only · not for students',public:'Open to everyone',maintenance:'Under Maintenance'};
+  const stC={occ:'#F87171',soon:'#FCD34D',free:'#4ADE80',empty:'#4ADE80',staff:'#F87171',public:'#7DD3FC',maintenance:'#9CA3AF',event:'#FBBF24',booked:'#C4B5FD'};
+  const stL={occ:'In Session',soon:'Starting Soon',free:'Free Now',empty:'Free Now',staff:'Staff only · not for students',public:'Open to everyone',maintenance:'Under Maintenance',event:'Event Running',booked:'Booked for Event'};
   let html=`<strong style="font-size:13px">${room.name}</strong><br><span style="color:${stC[st.status]};font-weight:700;font-size:12px">${stL[st.status]}</span>`;
   if(st.status==='occ'&&st.entry){
     html+=`<div style="margin-top:5px;font-size:11.5px"><strong>${st.entry.code}</strong>: ${st.entry.course}</div>`;
@@ -445,6 +486,12 @@ function openRoom(id){
   } else if(st.status==='maintenance'){
     sb.className='m-status maint';
     sb.innerHTML=`<div class="st-title"><i class="fa-solid fa-wrench"></i> Under Maintenance</div><div style="font-size:12.5px;color:var(--txt-muted)">This room is currently unavailable. Contact admin for details.</div>`;
+  } else if(st.status==='event'){
+    sb.className='m-status soon';
+    sb.innerHTML=`<div class="st-title"><i class="fa-solid fa-calendar-star"></i> Event Running</div><div style="font-size:12.5px;color:var(--txt-muted)">An event is currently taking place in this room.</div>`;
+  } else if(st.status==='booked'){
+    sb.className='m-status maint';
+    sb.innerHTML=`<div class="st-title"><i class="fa-solid fa-calendar-check"></i> Booked for Event</div><div style="font-size:12.5px;color:var(--txt-muted)">This room is reserved for an upcoming event.</div>`;
   } else if(st.status==='occ'){
     const e=st.entry,rem=t2m(e.end)-min;
     sb.className='m-status occ';
@@ -593,8 +640,9 @@ let toastTmr;
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTmr);toastTmr=setTimeout(()=>t.classList.remove('show'),2800);}
 
 function init(){
+  loadAll(); // pick up any changes made in admin
   updateClock();
-  setInterval(()=>{updateClock();if(curView==='dashboard')renderDash();if(curView==='schedule')renderSchedTable();if(curClassId)renderClass();},30000);
+  setInterval(()=>{loadAll();updateClock();if(curView==='dashboard')renderDash();if(curView==='schedule')renderSchedTable();if(curClassId)renderClass();},30000);
   renderAnnouncements();
   renderDash();
   document.getElementById('f-time').value=m2t(getNow().min);
