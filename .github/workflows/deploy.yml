@@ -115,19 +115,29 @@ jobs:
             systemctl reload nginx
             python3 - <<'PY'
             import json
+            import re
             from urllib.error import HTTPError
-            from urllib.request import urlopen
+            from pathlib import Path
+            from urllib.request import Request, urlopen
 
-            for url in (
-                "http://127.0.0.1:3000/api/rooms",
-                "http://127.0.0.1/api/rooms",
-            ):
+            config = Path("/etc/nginx/sites-available/ue-portal").read_text()
+            match = re.search(r"(?m)^\s*server_name\s+([^;]+);", config)
+            if not match:
+                raise SystemExit("Nginx server_name is missing.")
+            host = next((name for name in match.group(1).split() if name != "_"), "_")
+
+            checks = (
+                ("API", "http://127.0.0.1:3000/api/rooms", None),
+                ("Nginx", "http://127.0.0.1/api/rooms", host),
+            )
+            for label, url, host_header in checks:
                 try:
-                    with urlopen(url, timeout=10) as response:
+                    headers = {"Host": host_header} if host_header else {}
+                    with urlopen(Request(url, headers=headers), timeout=10) as response:
                         json.load(response)
                 except HTTPError as error:
                     body = error.read(500).decode("utf-8", errors="replace")
-                    print(f"Health check failed for {url}: HTTP {error.code}: {body}")
+                    print(f"{label} health check failed for {url}: HTTP {error.code}: {body}")
                     raise SystemExit(1)
-                print(f"Health check passed: {url}")
+                print(f"{label} health check passed: {url}")
             PY
