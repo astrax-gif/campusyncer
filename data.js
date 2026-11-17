@@ -107,31 +107,41 @@ function nextId() { return _nextId++; }
 // ─── Floor plan layout data ───────────────────────────
 const FLOOR_LAYOUTS = {
   1: {
-    w:1000, h:450,
-    label:'Ground Floor Plan · UE Dubai',
-    struct:[
-      ['outer',    0,   0, 1000, 450, null],
-      ['corridor', 5, 205,  990,  50, 'Main Corridor'],
-      ['util',   868, 205,  127,  50, 'Entrance'],
+    w: 1000, h: 740,
+    label: 'Floor Plan · UE Dubai (Trade Centre)',
+    // Irregular L-shaped building: left block is shorter, right corridor extends further down
+    polyOuter: '5,5 875,5 875,735 400,735 400,268 5,268 5,5',
+    struct: [
+      // Large open/non-room zones
+      ['studio',      155,  78, 215, 185, 'WEStudio'],
+      ['studio',      416,  78, 175, 185, 'Staff Office'],
+      ['corridor-v',  373,  78,  40, 185, 'Reception'],
+      // Lower exit corridor (between lower rooms and 2nd door)
+      ['corridor',    403, 625, 465, 107, 'Exit Corridor'],
+      // Entry / exit doors on the building outline
+      ['door',        263, 262, 'h',   0, 'Front Door'],
+      ['door',        403, 678, 'v',   0, '2nd Door'],
     ],
-    rooms:[
-      // top row
-      ['202',  10,  15, 230, 185],
-      ['204', 243,  15, 130, 185],
-      ['205', 376,  15, 130, 185],
-      ['209', 509,  15, 120, 185],
-      ['210', 632,  15, 115, 185],
-      ['215', 750,  15, 115, 185],
-      ['216', 868,  15, 122, 185],
-      // bottom row
-      ['DHL', 10,  260, 210, 180],
-      ['206', 223, 260, 100, 180],
-      ['207', 326, 260, 100, 180],
-      ['208', 429, 260, 100, 180],
-      ['211', 532, 260, 100, 180],
-      ['213', 635, 260, 115, 180],
-      ['214', 753, 260, 115, 180],
-      ['CAFE',871, 260, 119, 180],
+    rooms: [
+      // ── Left block (y: 20–265) ──────────────────────
+      ['202',  15,  20, 135, 150],   // Lecture Theatre
+      ['CAFE', 155, 20, 215,  55],   // Café / open space
+      ['DHL',  15, 173, 135,  90],   // Library
+      // ── Top-right auditoriums ────────────────────────
+      ['204',  597,  20, 120, 135],
+      ['205',  721,  20, 150, 135],
+      // ── Right faculty-office column (top → bottom) ──
+      ['206',  721, 158, 150, 108],  // just below 205, still in upper block
+      ['207',  721, 270, 150, 122],  // lower block row 1
+      ['208',  721, 395, 150, 122],  // lower block row 2
+      ['209',  721, 520, 150, 102],  // lower block row 3
+      // ── Lower left-centre area ───────────────────────
+      ['216',  416, 270, 193, 122],  // PC Lab  (row 1 left)
+      ['210',  613, 270, 103, 122],  //         (row 1 right)
+      ['215',  416, 395, 193, 122],  //         (row 2 left)
+      ['211',  613, 395, 103, 122],  // Faculty (row 2 right)
+      ['213',  416, 520, 193, 102],  //         (row 3 left)
+      ['214',  613, 520, 103, 102],  //         (row 3 right)
     ],
   },
 };

@@ -309,14 +309,39 @@ function renderFP(){
     <pattern id="maint" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)"><rect width="4" height="8" fill="#1E293B"/><rect x="4" width="4" height="8" fill="#273449"/></pattern>
   </defs>`;
 
+  // Full-canvas dark background + irregular building polygon
+  svg+=`<rect x="0" y="0" width="${plan.w}" height="${plan.h}" fill="#070D1A"/>`;
+  if(plan.polyOuter){
+    svg+=`<polygon points="${plan.polyOuter}" fill="#0B1220" stroke="#334155" stroke-width="2.5" stroke-dasharray="8 6"/>`;
+  }
+
   plan.struct.forEach(([type,x,y,w,h,label])=>{
-    if(type==='outer') svg+=`<rect x="${x+2}" y="${y+2}" width="${w-4}" height="${h-4}" rx="6" fill="#0B1220" stroke="#334155" stroke-width="2" stroke-dasharray="7 6"/>`;
-    else if(type==='corridor'){
+    if(type==='outer'){
+      if(!plan.polyOuter) svg+=`<rect x="${x+2}" y="${y+2}" width="${w-4}" height="${h-4}" rx="6" fill="#0B1220" stroke="#334155" stroke-width="2" stroke-dasharray="7 6"/>`;
+    } else if(type==='corridor'){
       svg+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#162033"/>`;
-      if(label) svg+=`<text x="${x+w/2-60}" y="${y+h/2+4}" text-anchor="middle" font-size="11" font-weight="600" fill="#64748B" ${F} letter-spacing="2">${label.toUpperCase()}</text>`;
+      if(label) svg+=`<text x="${x+w/2}" y="${y+h/2+4}" text-anchor="middle" font-size="11" font-weight="600" fill="#64748B" ${F} letter-spacing="2">${label.toUpperCase()}</text>`;
+    } else if(type==='corridor-v'){
+      // Vertical strip — rotated label
+      svg+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#162033"/>`;
+      if(label) svg+=`<text x="${x+w/2}" y="${y+h/2}" text-anchor="middle" font-size="9" font-weight="600" fill="#64748B" ${F} letter-spacing="1.5" transform="rotate(-90,${x+w/2},${y+h/2})">${label.toUpperCase()}</text>`;
+    } else if(type==='studio'){
+      // Large open area (WEStudio, Staff Office)
+      svg+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#0D1829" stroke="#1E3A5F" stroke-width="1" stroke-dasharray="6 4"/>`;
+      if(label) svg+=`<text x="${x+w/2}" y="${y+h/2+6}" text-anchor="middle" font-size="${w>150?16:12}" font-weight="800" fill="#1D4ED8" ${F} opacity="0.6" letter-spacing="2">${label.toUpperCase()}</text>`;
     } else if(type==='util'){
       svg+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#hatch)" stroke="#334155"/>`;
       if(label) svg+=`<text x="${x+w/2}" y="${y+h/2+4}" text-anchor="middle" font-size="10" font-weight="700" fill="#94A3B8" ${F} letter-spacing="1">${label.toUpperCase()}</text>`;
+    } else if(type==='door'){
+      // Door indicator on the building outline (w='h' for horizontal wall, 'v' for vertical)
+      const isV=w==='v';
+      if(isV){
+        svg+=`<rect x="${x-5}" y="${y-22}" width="11" height="44" rx="5" fill="#065F46" stroke="#34D399" stroke-width="1"/>`;
+        if(label) svg+=`<text x="${x+16}" y="${y+4}" text-anchor="start" font-size="8" font-weight="700" fill="#34D399" ${F}>${label.toUpperCase()}</text>`;
+      } else {
+        svg+=`<rect x="${x-22}" y="${y-5}" width="44" height="11" rx="5" fill="#065F46" stroke="#34D399" stroke-width="1"/>`;
+        if(label) svg+=`<text x="${x}" y="${y-9}" text-anchor="middle" font-size="8" font-weight="700" fill="#34D399" ${F}>${label.toUpperCase()}</text>`;
+      }
     }
   });
 
@@ -332,35 +357,58 @@ function renderFP(){
     const isNum=/^\d+$/.test(id);
     const big=isNum?id:(id==='DHL'?'DHL':'CAFÉ');
     const sub=isNum?room.type:(id==='DHL'?'Library':'Open Space');
-    svg+=`<text x="${midX}" y="${ry+44}" text-anchor="middle" font-size="${isNum?26:22}" font-weight="800" fill="${tc[st.status]||'#E2E8F0'}" ${F}>${big}</text>`;
-    svg+=`<text x="${midX}" y="${ry+62}" text-anchor="middle" font-size="10" font-weight="600" fill="#94A3B8" ${F}>${sub}</text>`;
-    if(room.capacity>0) svg+=`<text x="${midX}" y="${ry+77}" text-anchor="middle" font-size="10" fill="#94A3B8" ${F}>${room.capacity} chairs</text>`;
+    // Helper: true if text at offset dy fits inside the room rect
+    const fits=dy=>ry+dy < y+h-4;
 
-    const pills={occ:['IN SESSION','#EF4444'],free:['FREE','#22C55E'],empty:['FREE','#22C55E'],soon:['STARTING SOON','#D97706'],staff:['STAFF ONLY','#DC2626']};
-    const pl=pills[st.status];
-    if(pl){
-      const lw=pl[0].length*6.4+18;
-      svg+=`<rect x="${midX-lw/2}" y="${ry+90}" width="${lw}" height="18" rx="9" fill="${pl[1]}" ${F}/>`;
-      svg+=`<text x="${midX}" y="${ry+102.5}" text-anchor="middle" font-size="8.5" font-weight="800" fill="#fff" letter-spacing="0.6" ${F}>${pl[0]}</text>`;
-    }
-    if(st.status==='staff') svg+=`<text x="${midX}" y="${ry+128}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#FCA5A5" ${F}>Not for students</text>`;
-    if(st.status==='maintenance') svg+=`<text x="${midX}" y="${ry+98}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#94A3B8" ${F}>MAINTENANCE</text>`;
-    if((st.status==='occ'||st.status==='soon')&&st.entry){
-      svg+=`<text x="${midX}" y="${ry+128}" text-anchor="middle" font-size="10" font-weight="700" fill="#E2E8F0" ${F}>${st.entry.code}</text>`;
-      const line=st.status==='occ'?`ends in ${fmtDur(t2m(st.entry.end)-min)}`:`starts in ${fmtDur(t2m(st.entry.start)-min)}`;
-      svg+=`<text x="${midX}" y="${ry+142}" text-anchor="middle" font-size="9" fill="#94A3B8" ${F}>${line}</text>`;
+    if(rh<70){
+      // Tiny rooms (CAFE): just ID centred
+      svg+=`<text x="${midX}" y="${ry+rh/2+7}" text-anchor="middle" font-size="${rw>80?20:16}" font-weight="800" fill="${tc[st.status]||'#E2E8F0'}" ${F}>${big}</text>`;
+      if(fits(rh/2+21)) svg+=`<text x="${midX}" y="${ry+rh/2+21}" text-anchor="middle" font-size="9" fill="#94A3B8" ${F}>${sub}</text>`;
+    } else {
+      // All other rooms: scale text to room height
+      const bigFz=rh<100?20:24;
+      const idOff=rh<100?26:30;
+      svg+=`<text x="${midX}" y="${ry+idOff}" text-anchor="middle" font-size="${bigFz}" font-weight="800" fill="${tc[st.status]||'#E2E8F0'}" ${F}>${big}</text>`;
+      const typeOff=rh<100?42:46;
+      if(fits(typeOff)) svg+=`<text x="${midX}" y="${ry+typeOff}" text-anchor="middle" font-size="9.5" font-weight="600" fill="#94A3B8" ${F}>${sub}</text>`;
+      const capOff=rh<100?55:60;
+      if(room.capacity>0&&fits(capOff)) svg+=`<text x="${midX}" y="${ry+capOff}" text-anchor="middle" font-size="9" fill="#94A3B8" ${F}>${room.capacity} chairs</text>`;
+
+      if(rh>=86){
+        const pills={occ:['IN SESSION','#EF4444'],free:['FREE','#22C55E'],empty:['FREE','#22C55E'],soon:['SOON','#D97706'],staff:['STAFF ONLY','#DC2626']};
+        const pl=pills[st.status];
+        const pillOff=rh<100?65:72;
+        if(pl&&fits(pillOff+16)){
+          const lw=Math.min(pl[0].length*6.4+18,rw-8);
+          svg+=`<rect x="${midX-lw/2}" y="${ry+pillOff}" width="${lw}" height="16" rx="8" fill="${pl[1]}" ${F}/>`;
+          svg+=`<text x="${midX}" y="${ry+pillOff+11}" text-anchor="middle" font-size="8" font-weight="800" fill="#fff" letter-spacing="0.5" ${F}>${pl[0]}</text>`;
+        }
+        if(st.status==='staff'&&fits(pillOff+22)) svg+=`<text x="${midX}" y="${ry+pillOff+22}" text-anchor="middle" font-size="8.5" font-weight="700" fill="#FCA5A5" ${F}>Staff only</text>`;
+        if(st.status==='maintenance'&&fits(pillOff+22)) svg+=`<text x="${midX}" y="${ry+pillOff+22}" text-anchor="middle" font-size="8.5" font-weight="700" fill="#94A3B8" ${F}>MAINT.</text>`;
+      }
+      if((st.status==='occ'||st.status==='soon')&&st.entry){
+        const codeOff=rh<100?90:100;
+        if(fits(codeOff)) svg+=`<text x="${midX}" y="${ry+codeOff}" text-anchor="middle" font-size="9" font-weight="700" fill="#E2E8F0" ${F}>${st.entry.code}</text>`;
+        const timeOff=codeOff+13;
+        if(fits(timeOff)){
+          const line=st.status==='occ'?`ends ${fmtDur(t2m(st.entry.end)-min)}`:`in ${fmtDur(t2m(st.entry.start)-min)}`;
+          svg+=`<text x="${midX}" y="${ry+timeOff}" text-anchor="middle" font-size="8.5" fill="#94A3B8" ${F}>${line}</text>`;
+        }
+      }
     }
   });
 
-  // movable walls (rooms that can be opened into one)
+  // Movable wall 204+205: only shown when BOTH rooms are actively in use at the same time
   MERGE_GROUPS.forEach(([a,b])=>{
     const ra=plan.rooms.find(r=>r[0]===a), rb=plan.rooms.find(r=>r[0]===b); if(!ra||!rb)return;
+    const stA=roomStatus(a,today,min).status, stB=roomStatus(b,today,min).status;
+    const inUse=s=>['occ','soon'].includes(s);
+    if(!inUse(stA)||!inUse(stB)) return; // wall indicator hidden unless both have an event
     const mx=(ra[1]+ra[3]+rb[1])/2, y1=ra[2]+4, y2=ra[2]+ra[4]-4;
-    svg+=`<line x1="${mx}" y1="${y1}" x2="${mx}" y2="${y2}" stroke="#E2E8F0" stroke-width="2.5" stroke-dasharray="6 4" ${F}/>`;
     const total=(getRoom(a)?.capacity||0)+(getRoom(b)?.capacity||0);
-    const both=['free','empty'].includes(roomStatus(a,today,min).status)&&['free','empty'].includes(roomStatus(b,today,min).status);
-    svg+=`<rect x="${mx-88}" y="${y2-20}" width="176" height="16" rx="8" fill="#0F172A" stroke="${both?'#34D399':'#64748B'}" ${F}/>`;
-    svg+=`<text x="${mx}" y="${y2-8.5}" text-anchor="middle" font-size="8.5" font-weight="700" fill="${both?'#6EE7B7':'#CBD5E1'}" ${F}>↔ Wall opens · ${a}+${b} = ${total} chairs</text>`;
+    svg+=`<line x1="${mx}" y1="${y1}" x2="${mx}" y2="${y2}" stroke="#A78BFA" stroke-width="2.5" stroke-dasharray="6 4" ${F}/>`;
+    svg+=`<rect x="${mx-110}" y="${y2-20}" width="220" height="16" rx="8" fill="#0F172A" stroke="#A78BFA" ${F}/>`;
+    svg+=`<text x="${mx}" y="${y2-8.5}" text-anchor="middle" font-size="8.5" font-weight="700" fill="#C4B5FD" ${F}>↔ WALL OPEN · ${a}+${b} = ${total} chairs combined</text>`;
   });
 
   fpSvg.setAttribute('viewBox',`0 0 ${plan.w} ${plan.h}`);
