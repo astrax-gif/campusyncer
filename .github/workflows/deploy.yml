@@ -30,7 +30,13 @@ jobs:
               echo "UE Portal checkout not found under /var/www." >&2
               exit 1
             fi
-            git pull origin main
+            git fetch origin main
+            if git merge-base --is-ancestor HEAD origin/main; then
+              git merge --ff-only origin/main
+            else
+              echo "Deployment checkout diverged from main; aligning it to origin/main."
+              git reset --hard origin/main
+            fi
             npm ci --omit=dev
             if [ ! -f /etc/ue-portal.env ]; then
               if [ -z "$ADMIN_PASSWORD" ] || [ -z "$ADMIN_SECRET" ]; then
