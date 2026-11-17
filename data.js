@@ -114,7 +114,7 @@ const FLOOR_LAYOUTS = {
     w: 1000, h: 740,
     label: 'Floor Plan · UE Dubai (Trade Centre)',
     // Irregular L-shaped building: left block is shorter, right corridor extends further down
-    polyOuter: '5,5 875,5 875,735 400,735 400,268 5,268 5,5',
+    polyOuter: '5,5 400,5 400,268 875,268 875,735 5,735 5,5',
     struct: [
       // Large open/non-room zones
       ['studio',      155,  78, 215, 185, 'WEStudio'],
@@ -123,6 +123,7 @@ const FLOOR_LAYOUTS = {
       // Lower exit corridor (between lower rooms and 2nd door)
       ['corridor',    403, 625, 465, 107, 'Exit Corridor'],
       // Entry / exit doors on the building outline
+      ['corridor',    5,  258, 870,  18, 'Main Corridor'],
       ['door',        263, 262, 'h',   0, 'Front Door'],
       ['door',        403, 678, 'v',   0, '2nd Door'],
     ],
@@ -241,3 +242,4 @@ function loadAll(){
     if(d.ni) _nextId = d.ni;
   }catch(e){ console.warn('[UE] loadAll failed', e); }
 }
+
