@@ -18,7 +18,14 @@ jobs:
           key: ${{ secrets.VULTR_SSH_KEY }}
           script: |
             set -e
-            cd /var/www/ue-portal
+            if [ -d /var/www/ue-portal ]; then
+              cd /var/www/ue-portal
+            elif [ -d /var/www/Ue-portal ]; then
+              cd /var/www/Ue-portal
+            else
+              echo "UE Portal checkout not found under /var/www." >&2
+              exit 1
+            fi
             git pull origin main
             npm ci --omit=dev
             set -a
