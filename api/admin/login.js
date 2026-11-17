@@ -1,5 +1,5 @@
 const handler = require('../../lib/http');
-const { sign } = require('../../lib/auth');
+const { sign, isSecureRequest } = require('../../lib/auth');
 const staffStore = require('../../lib/staff-store');
 const adminPassword = require('../../lib/admin-password');
 
@@ -22,7 +22,7 @@ module.exports = handler({
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
     const token = sign({ ...user, ...(user.role === 'admin' ? { passwordChangedAt: adminPassword.changedAt() } : {}) });
-    const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+    const secure = isSecureRequest(req) ? '; Secure' : '';
     res.setHeader('Set-Cookie', `adminToken=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800${secure}`);
     res.json({
       user: {

@@ -1,6 +1,6 @@
 const handler = require('../../lib/http');
 const adminPassword = require('../../lib/admin-password');
-const { requireAdmin } = require('../../lib/auth');
+const { isSecureRequest, requireAdmin } = require('../../lib/auth');
 
 module.exports = handler({
   POST(req, res) {
@@ -12,7 +12,7 @@ module.exports = handler({
       return res.status(400).json({ error: 'New password must be 10–128 characters.' });
 
     adminPassword.update(newPassword);
-    const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+    const secure = isSecureRequest(req) ? '; Secure' : '';
     res.setHeader('Set-Cookie', `adminToken=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secure}`);
     res.json({ updated: true });
   },
