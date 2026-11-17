@@ -11,11 +11,15 @@ jobs:
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
         with:
           host: ${{ secrets.VULTR_HOST }}
           username: ${{ secrets.VULTR_USER || secrets.VULTR_USERNAME }}
           password: ${{ secrets.VULTR_PASSWORD }}
           key: ${{ secrets.VULTR_SSH_KEY }}
+          envs: ADMIN_PASSWORD,ADMIN_SECRET
           script: |
             set -e
             if [ -d /var/www/ue-portal ]; then
@@ -28,6 +32,24 @@ jobs:
             fi
             git pull origin main
             npm ci --omit=dev
+            if [ ! -f /etc/ue-portal.env ]; then
+              if [ -z "$ADMIN_PASSWORD" ] || [ -z "$ADMIN_SECRET" ]; then
+                echo "Missing ADMIN_PASSWORD or ADMIN_SECRET deployment secrets." >&2
+                exit 1
+              fi
+              mkdir -p /var/lib/ue-portal
+              chmod 700 /var/lib/ue-portal
+              umask 077
+              cat > /etc/ue-portal.env <<EOF
+            NODE_ENV=production
+            PORT=3000
+            ADMIN_PASSWORD=$ADMIN_PASSWORD
+            ADMIN_SECRET=$ADMIN_SECRET
+            STAFF_STORE_FILE=/var/lib/ue-portal/staff-users.json
+            ADMIN_PASSWORD_STORE_FILE=/var/lib/ue-portal/admin-password.json
+            EOF
+              chmod 600 /etc/ue-portal.env
+            fi
             set -a
             . /etc/ue-portal.env
             set +a
