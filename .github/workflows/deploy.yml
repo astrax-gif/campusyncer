@@ -113,5 +113,21 @@ jobs:
             PY
             nginx -t
             systemctl reload nginx
-            curl -fsS http://127.0.0.1:3000/api/rooms -o /dev/null
-            curl -fsS http://127.0.0.1/api/rooms | python3 -c 'import json,sys; json.load(sys.stdin)'
+            python3 - <<'PY'
+            import json
+            from urllib.error import HTTPError
+            from urllib.request import urlopen
+
+            for url in (
+                "http://127.0.0.1:3000/api/rooms",
+                "http://127.0.0.1/api/rooms",
+            ):
+                try:
+                    with urlopen(url, timeout=10) as response:
+                        json.load(response)
+                except HTTPError as error:
+                    body = error.read(500).decode("utf-8", errors="replace")
+                    print(f"Health check failed for {url}: HTTP {error.code}: {body}")
+                    raise SystemExit(1)
+                print(f"Health check passed: {url}")
+            PY
