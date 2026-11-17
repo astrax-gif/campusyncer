@@ -55,3 +55,58 @@ jobs:
             set +a
             pm2 restart ue-portal-api --update-env || pm2 start scripts/dev-server.js --name ue-portal-api
             pm2 save
+            python3 - <<'PY'
+            from pathlib import Path
+            import re
+            import shutil
+
+            path = Path("/etc/nginx/sites-available/ue-portal")
+            text = path.read_text()
+            insertions = []
+            found = False
+            for match in re.finditer(r"(?m)^[ \t]*server\s*\{", text):
+                opening = text.find("{", match.start(), match.end())
+                depth = 1
+                index = opening + 1
+                while index < len(text) and depth:
+                    line_start = text.rfind("\n", 0, index) + 1
+                    if not text[line_start:index].strip() and text[index] == "#":
+                        newline = text.find("\n", index)
+                        index = len(text) if newline == -1 else newline
+                        continue
+                    if text[index] == "{":
+                        depth += 1
+                    elif text[index] == "}":
+                        depth -= 1
+                    index += 1
+                block = text[match.start():index]
+                if re.search(r"(?im)^\s*root\s+/var/www/(?:ue-portal|Ue-portal)/?;", block):
+                    found = True
+                    if not re.search(r"(?im)^\s*location\s+/api/\s*\{", block):
+                        insertions.append(opening + 1)
+
+            if not found:
+                raise SystemExit("UE Portal server block not found in Nginx configuration.")
+
+            if insertions:
+                backup = path.with_name(path.name + ".before-api")
+                if not backup.exists():
+                    shutil.copy2(path, backup)
+                proxy = """
+                location /api/ {
+                  proxy_pass http://127.0.0.1:3000;
+                  proxy_http_version 1.1;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+                }
+            """
+                for position in reversed(insertions):
+                    text = text[:position] + proxy + text[position:]
+                path.write_text(text)
+            PY
+            nginx -t
+            systemctl reload nginx
+            curl -fsS http://127.0.0.1:3000/api/rooms -o /dev/null
+            curl -fsS http://127.0.0.1/api/rooms | python3 -c 'import json,sys; json.load(sys.stdin)'
