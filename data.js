@@ -114,7 +114,7 @@ const FLOOR_LAYOUTS = {
     w: 1000, h: 740,
     label: 'Floor Plan · UE Dubai (Trade Centre)',
     // Irregular L-shaped building: left block is shorter, right corridor extends further down
-    polyOuter: '5,5 400,5 400,268 875,268 875,735 5,735 5,5',
+    
     struct: [
       // Large open/non-room zones
       ['studio',      155,  78, 215, 185, 'WEStudio'],
