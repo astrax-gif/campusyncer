@@ -3,7 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>UE Dubai — Room Portal</title>
+<title>CampusFlow · UE Dubai Room Portal</title>
+<meta name="description" content="Live classroom availability, timetables and room utilisation insights for UE Dubai — powered by CampusFlow.">
+<meta name="theme-color" content="#C8102E">
+<meta property="og:title" content="CampusFlow · UE Dubai Room Portal">
+<meta property="og:description" content="Find a free room, find your class, and see how campus space is really used — live.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23C8102E'/%3E%3Cpath d='M18 44V20h12a10 10 0 010 20h-4M34 44h12' stroke='%23fff' stroke-width='6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Raleway:wght@700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -17,7 +23,7 @@
     <div class="brand" onclick="switchView('dashboard')">
       <img class="brand-logo" src="https://onlinecampus.ue-germany.de/gfx/ue/logo.svg" alt="UE logo">
       <div class="brand-text">
-        <div class="brand-name">Room Portal</div>
+        <div class="brand-name" data-brand="name">CampusFlow</div>
         <div class="brand-sub">UE Dubai Campus</div>
       </div>
     </div>
@@ -25,8 +31,10 @@
       <div class="nav-tab active" data-view="dashboard" onclick="switchView('dashboard')"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></div>
       <div class="nav-tab" data-view="search" onclick="switchView('search')"><i class="fa-solid fa-magnifying-glass"></i><span>Find Course</span></div>
       <div class="nav-tab" data-view="schedule" onclick="switchView('schedule')"><i class="fa-solid fa-calendar-days"></i><span>Schedule</span></div>
+      <div class="nav-tab" data-view="insights" onclick="switchView('insights')"><i class="fa-solid fa-chart-column"></i><span>Insights</span></div>
     </div>
     <div class="topbar-right">
+      <a href="#" onclick="switchView('insights');return false" class="btn btn-red btn-sm pitch-link" style="text-decoration:none"><i class="fa-solid fa-wand-magic-sparkles"></i> Why <span data-brand="name">CampusFlow</span></a>
       <a href="admin.html" class="btn btn-out btn-sm" style="text-decoration:none"><i class="fa-solid fa-shield-halved"></i> Admin</a>
       <div id="live-clock">--:-- --</div>
     </div>
@@ -148,7 +156,25 @@
     </div>
   </div>
 
+  <!-- ═══ INSIGHTS ═══ -->
+  <div id="view-insights" class="view">
+    <div class="search-hdr" style="margin-bottom:18px">
+      <h2>Space Insights</h2>
+      <p style="font-size:13px;color:var(--txt-muted);margin-top:4px">How the campus is really used this week, calculated live from the timetable.</p>
+    </div>
+    <div id="insights-root"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
+      <button class="btn btn-out btn-sm" onclick="exportCSV()"><i class="fa-solid fa-file-csv"></i> Export full timetable (CSV)</button>
+      <a class="btn btn-red btn-sm" href="#" onclick="switchView('insights');return false" style="text-decoration:none"><i class="fa-solid fa-chart-line"></i> See the management overview</a>
+    </div>
+  </div>
+
 </div>
+
+<footer class="cf-footer">
+  <span>Powered by <b data-brand="name">CampusFlow</b> · Built for UE Dubai</span>
+  <a href="#" onclick="switchView('insights');return false">About the platform</a>
+</footer>
 
 <!-- Room Detail Modal -->
 <div class="overlay" id="room-overlay" onclick="closeRoom(event)">
@@ -188,7 +214,9 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="brand.js?v=20261117"></script>
 <script src="data.js?v=20261115"></script>
+<script src="insights.js?v=20261117"></script>
 <script>
 // ══════════════════════════════════════════════════
 // STATE
@@ -237,6 +265,7 @@ function switchView(v){
   if(v==='dashboard')renderDash();
   if(v==='schedule')renderSchedule();
   if(v==='search')renderCourseSearch();
+  if(v==='insights')Insights.render(document.getElementById('insights-root'));
 }
 
 // ══════════════════════════════════════════════════
@@ -596,7 +625,7 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 function init(){
   loadAll(); // pick up any changes made in admin
   updateClock();
-  setInterval(()=>{loadAll();updateClock();if(curView==='dashboard')renderDash();if(curView==='schedule')renderSchedTable();if(curClassId)renderClass();},30000);
+  setInterval(()=>{loadAll();updateClock();if(curView==='dashboard')renderDash();if(curView==='schedule')renderSchedTable();if(curView==='insights')Insights.render(document.getElementById('insights-root'));if(curClassId)renderClass();},30000);
   renderAnnouncements();
   renderDash();
   document.getElementById('f-time').value=m2t(getNow().min);

@@ -318,3 +318,10 @@ input,select,textarea{font-family:inherit}
 .fp-room{transform-box:fill-box;transform-origin:center;transition:transform .15s,opacity .15s}
 .fp-room:hover{transform:scale(1.04);opacity:1}
 #fp-svg{border-radius:12px;background:#0B1220}
+
+/* ── CAMPUSFLOW ADDITIONS ─────── */
+.cf-footer{max-width:1260px;margin:8px auto 28px;padding:16px 20px 0;border-top:1px solid var(--border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--txt-muted)}
+.cf-footer a{color:var(--red);font-weight:600}
+.cf-footer a:hover{text-decoration:underline}
+@media(max-width:820px){.pitch-link span,.pitch-link{font-size:0}.pitch-link i{font-size:13px}}
+@media(max-width:620px){.nav-tabs{overflow-x:auto}.topbar-right #live-clock{display:none}}
