@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Raleway:wght@700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="styles.css?v=20261120">
+<link rel="stylesheet" href="styles.css?v=20261121">
 </head>
 <body>
 
@@ -190,7 +190,7 @@
 <div class="rp-lightbox" id="rp-lb" onclick="this.classList.remove('open')"><img id="rp-lb-img" alt="Room photo"></div>
 <div class="toast" id="toast"></div>
 
-<script src="data.js?v=20261120"></script>
+<script src="data.js?v=20261121"></script>
 <script>
 // ══════════════════════════════════════════════════
 // STATE
@@ -400,15 +400,22 @@ function renderFP(){
       const cut=t=>{t=String(t||'');return t.length>maxc?t.slice(0,maxc-1)+'…':t;};
       const lines=[[room.name,12,'800','#fff'],[bl[0],10.5,'700',bl[1]]];
       if((st.status==='occ'||st.status==='soon')&&st.entry){
-        lines.push([st.entry.code+' · '+st.entry.course,9.5,'600','#E5E7EB'],[effProf(st.entry),9,'400','#D1D5DB'],
-          [st.status==='occ'?`Ends in ${fmtDur(t2m(st.entry.end)-min)}`:`Starts ${fmtT(st.entry.start)} (in ${fmtDur(t2m(st.entry.start)-min)})`,9,'400','#9CA3AF']);
+        lines.push([st.entry.code+' · '+st.entry.course,9.5,'600','#E5E7EB'],[effProf(st.entry),9,'400','#F3F4F6'],
+          [st.status==='occ'?`Ends in ${fmtDur(t2m(st.entry.end)-min)}`:`Starts ${fmtT(st.entry.start)} (in ${fmtDur(t2m(st.entry.start)-min)})`,9,'400','#E5E7EB']);
       } else if(st.status==='free'||st.status==='empty'){
         const nx=SCHEDULE.filter(q=>q.roomId===id&&q.day===today&&t2m(q.start)>min).sort((a,b)=>t2m(a.start)-t2m(b.start))[0];
-        lines.push([nx?`Next: ${fmtT(nx.start)} · ${nx.code}`:'No more classes today',9.5,'400','#D1D5DB']);
+        lines.push([nx?`Next: ${fmtT(nx.start)} · ${nx.code}`:'No more classes today',9.5,'400','#F3F4F6']);
       }
-      if(room.capacity>0) lines.push([`${room.capacity} chairs`,9,'400','#9CA3AF']);
+      if(room.capacity>0) lines.push([`${room.capacity} chairs`,9,'400','#E5E7EB']);
       lines.push(['Click for details',8.5,'700','#FCA5A5']);
       svg+=`<g class="fp-back" style="${orig}"><rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="4" fill="#1F2937" stroke="${c.stroke}" stroke-width="2"/>`;
+      const photo=(ROOM_PHOTOS&&ROOM_PHOTOS[id]||[])[0];
+      if(photo){
+        const cid='fpc-'+String(id).replace(/[^A-Za-z0-9]/g,'');
+        svg+=`<clipPath id="${cid}"><rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="4"/></clipPath>`;
+        svg+=`<image href="${photo}" x="${rx}" y="${ry}" width="${rw}" height="${rh}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${cid})"/>`;
+        svg+=`<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="4" fill="rgba(15,23,42,.68)" stroke="${c.stroke}" stroke-width="2"/>`;
+      }
       let ty=ry+(rh<70?15:22);
       lines.forEach(([t,fz,fw,col])=>{
         if(ty>y+h-6) return;
