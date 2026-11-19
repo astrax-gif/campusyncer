@@ -30,6 +30,9 @@ let ROOM_MAINTENANCE = {};
 // Values: 'free' | 'occ' | 'event' | 'booked' | 'maintenance'  — '' / absent = auto
 let ROOM_STATUS_OVERRIDES = {};
 
+// Room photos uploaded by admin: { roomId: [dataURL, ...] } (persisted in localStorage)
+let ROOM_PHOTOS = {};
+
 // Rooms that can be opened into one big room (movable wall)
 const MERGE_GROUPS = [['204','205']];
 
@@ -194,13 +197,19 @@ function saveAll(){
     localStorage.setItem(_STORE_KEY, JSON.stringify({
       rm: ROOM_MAINTENANCE,
       ro: ROOM_STATUS_OVERRIDES,
+      rp: ROOM_PHOTOS,
       sc: SCHEDULE,
       an: ANNOUNCEMENTS,
       pr: PROFESSORS,
       ps: PORTAL_SETTINGS,
       ni: _nextId,
     }));
-  }catch(e){ console.warn('[UE] saveAll failed', e); }
+  }catch(e){
+    console.warn('[UE] saveAll failed', e);
+    if(typeof showToast==='function') showToast('Storage full — remove some room photos');
+    return false;
+  }
+  return true;
 }
 
 function loadAll(){
@@ -217,6 +226,10 @@ function loadAll(){
     if(d.ro){
       Object.keys(ROOM_STATUS_OVERRIDES).forEach(k => delete ROOM_STATUS_OVERRIDES[k]);
       Object.assign(ROOM_STATUS_OVERRIDES, d.ro);
+    }
+    if(d.rp){
+      Object.keys(ROOM_PHOTOS).forEach(k => delete ROOM_PHOTOS[k]);
+      Object.assign(ROOM_PHOTOS, d.rp);
     }
     // Arrays – clear and re-fill in-place (avoids re-assignment)
     if(Array.isArray(d.sc)){ SCHEDULE.length=0;      SCHEDULE.push(...d.sc); }

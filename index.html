@@ -161,6 +161,7 @@
       </div>
       <div class="m-close" onclick="closeRoom(null,true)"><i class="fa-solid fa-xmark"></i></div>
     </div>
+    <div id="m-photos"></div>
     <div class="m-status" id="m-status"></div>
     <div class="m-next" id="m-next"></div>
     <div class="m-sched-title">Today's full schedule</div>
@@ -186,6 +187,7 @@
   </div>
 </div>
 
+<div class="rp-lightbox" id="rp-lb" onclick="this.classList.remove('open')"><img id="rp-lb-img" alt="Room photo"></div>
 <div class="toast" id="toast"></div>
 
 <script src="data.js?v=20261115"></script>
@@ -467,8 +469,19 @@ function fpOut(){const tt=document.getElementById('fp-tt');if(tt)tt.style.displa
 // ══════════════════════════════════════════════════
 // ROOM MODAL
 // ══════════════════════════════════════════════════
+let _rpIdx=0,_rpId=null;
+function renderRoomPhotos(id){
+  const box=document.getElementById('m-photos'),ph=(ROOM_PHOTOS&&ROOM_PHOTOS[id])||[];
+  if(_rpId!==id){_rpId=id;_rpIdx=0;}
+  if(!ph.length){box.innerHTML='';return;}
+  _rpIdx=(_rpIdx+ph.length)%ph.length;
+  box.innerHTML=`<div class="rp-gallery"><img src="${ph[_rpIdx]}" alt="Room ${id} photo" onclick="openRoomPhoto()">${ph.length>1?`<button class="rp-nav prev" onclick="rpStep(-1)"><i class="fa-solid fa-chevron-left"></i></button><button class="rp-nav next" onclick="rpStep(1)"><i class="fa-solid fa-chevron-right"></i></button><span class="rp-count">${_rpIdx+1} / ${ph.length}</span>`:''}</div>`;
+}
+function rpStep(d){_rpIdx+=d;renderRoomPhotos(_rpId);}
+function openRoomPhoto(){const ph=ROOM_PHOTOS[_rpId]||[];document.getElementById('rp-lb-img').src=ph[_rpIdx];document.getElementById('rp-lb').classList.add('open');}
 function openRoom(id){
   const room=getRoom(id);if(!room)return;
+  _rpId=null;renderRoomPhotos(id);
   const {min}=getNow(),today=getToday();
   const st=roomStatus(id,today,min);
   document.getElementById('m-rid').textContent=`ROOM ${room.id}`;
