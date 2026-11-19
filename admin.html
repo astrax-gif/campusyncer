@@ -1015,7 +1015,8 @@ function addRoom(){
   renderAdmRooms();populateDropdowns();updateQuickStats();showToast('Room added ✓');
 }
 
-function showAddProfModal(){document.getElementById('prof-overlay').classList.add('open');}
+function clearProfForm(){['p-name','p-dept','p-email','p-phone'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});}
+function showAddProfModal(){clearProfForm();document.getElementById('prof-overlay').classList.add('open');}
 function closeProfModal(ev,force){if(force||(ev&&ev.target===document.getElementById('prof-overlay')))document.getElementById('prof-overlay').classList.remove('open');}
 function addProf(){
   const name=document.getElementById('p-name').value.trim();
@@ -1025,6 +1026,7 @@ function addProf(){
   if(!name){alert('Name is required.');return;}
   PROFESSORS.push({id:nextId(),name,dept,email,phone});
   saveAll();
+  clearProfForm();
   closeProfModal(null,true);
   renderAdmProfs();populateDropdowns();updateQuickStats();showToast('Professor added ✓');
 }
