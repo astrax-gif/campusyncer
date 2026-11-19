@@ -255,11 +255,11 @@ function renderDash(){
   const nowItems=SCHEDULE.filter(s=>s.day===today&&t2m(s.start)<=min&&t2m(s.end)>min);
   const nowEl=document.getElementById('now-list');
   nowEl.innerHTML=nowItems.length===0?'<div class="empty-state"><i class="fa-regular fa-clock"></i>No classes in session right now</div>'
-    :nowItems.map(e=>`<div class="class-item" onclick="openClass(${e.id})"><div class="ci-dot occ"></div><div class="ci-info"><div class="ci-name">${e.course}</div><div class="ci-meta">${e.professor} · ${fmtT(e.start)}–${fmtT(e.end)} · ends in ${t2m(e.end)-min}m</div></div><div class="ci-room">${e.roomId}</div></div>`).join('');
+    :nowItems.map(e=>`<div class="class-item" onclick="openClass(${e.id})"><div class="ci-dot occ"></div><div class="ci-info"><div class="ci-name">${e.course}</div><div class="ci-meta">${effProfHtml(e)} · ${fmtT(e.start)}–${fmtT(e.end)} · ends in ${t2m(e.end)-min}m</div></div><div class="ci-room">${e.roomId}</div></div>`).join('');
   const nxt=SCHEDULE.filter(s=>s.day===today&&t2m(s.start)>min).sort((a,b)=>t2m(a.start)-t2m(b.start)).slice(0,5);
   const nxtEl=document.getElementById('next-list');
   nxtEl.innerHTML=nxt.length===0?'<div class="empty-state"><i class="fa-regular fa-calendar"></i>No more classes today</div>'
-    :nxt.map(e=>{const diff=t2m(e.start)-min;return`<div class="class-item" onclick="openClass(${e.id})"><div class="ci-dot ${diff<=15?'soon':'free'}"></div><div class="ci-info"><div class="ci-name">${e.course}</div><div class="ci-meta">${e.professor} · ${fmtT(e.start)}${diff<=90?` (in ${diff}m)`:''}</div></div><div class="ci-room">${e.roomId}</div></div>`;}).join('');
+    :nxt.map(e=>{const diff=t2m(e.start)-min;return`<div class="class-item" onclick="openClass(${e.id})"><div class="ci-dot ${diff<=15?'soon':'free'}"></div><div class="ci-info"><div class="ci-name">${e.course}</div><div class="ci-meta">${effProfHtml(e)} · ${fmtT(e.start)}${diff<=90?` (in ${diff}m)`:''}</div></div><div class="ci-room">${e.roomId}</div></div>`;}).join('');
   renderFP();renderFreeNow();
   const ft=document.getElementById('f-time');if(ft&&!ft.value)ft.value=m2t(min);
 }
@@ -400,7 +400,7 @@ function renderFP(){
       const cut=t=>{t=String(t||'');return t.length>maxc?t.slice(0,maxc-1)+'…':t;};
       const lines=[[room.name,12,'800','#fff'],[bl[0],10.5,'700',bl[1]]];
       if((st.status==='occ'||st.status==='soon')&&st.entry){
-        lines.push([st.entry.code+' · '+st.entry.course,9.5,'600','#E5E7EB'],[st.entry.professor,9,'400','#D1D5DB'],
+        lines.push([st.entry.code+' · '+st.entry.course,9.5,'600','#E5E7EB'],[effProf(st.entry),9,'400','#D1D5DB'],
           [st.status==='occ'?`Ends in ${fmtDur(t2m(st.entry.end)-min)}`:`Starts ${fmtT(st.entry.start)} (in ${fmtDur(t2m(st.entry.start)-min)})`,9,'400','#9CA3AF']);
       } else if(st.status==='free'||st.status==='empty'){
         const nx=SCHEDULE.filter(q=>q.roomId===id&&q.day===today&&t2m(q.start)>min).sort((a,b)=>t2m(a.start)-t2m(b.start))[0];
@@ -474,7 +474,7 @@ function fpHover(id,event){
   let html=`<strong style="font-size:13px">${room.name}</strong><br><span style="color:${stC[st.status]};font-weight:700;font-size:12px">${stL[st.status]}</span>`;
   if(st.status==='occ'&&st.entry){
     html+=`<div style="margin-top:5px;font-size:11.5px"><strong>${st.entry.code}</strong>: ${st.entry.course}</div>`;
-    html+=`<div style="font-size:11px;color:#D1D5DB">${st.entry.professor}</div>`;
+    html+=`<div style="font-size:11px;color:#D1D5DB">${effProfHtml(st.entry)}</div>`;
     html+=`<div style="font-size:11px;color:#9CA3AF">Started ${fmtDur(min-t2m(st.entry.start))} ago · ends in ${fmtDur(t2m(st.entry.end)-min)}</div>`;
   } else if(st.status==='soon'&&st.entry){
     html+=`<div style="margin-top:5px;font-size:11.5px"><strong>${st.entry.code}</strong>: ${st.entry.course}</div>`;
@@ -536,11 +536,11 @@ function openRoom(id){
   } else if(st.status==='occ'){
     const e=st.entry,rem=t2m(e.end)-min;
     sb.className='m-status occ';
-    sb.innerHTML=`<div class="st-title"><i class="fa-solid fa-circle-xmark"></i> In Session · ends in ${rem} min</div><div class="info-grid"><div class="info-row"><div class="i-lbl">Course</div><div class="i-val">${e.course}</div></div><div class="info-row"><div class="i-lbl">Code</div><div class="i-val">${e.code}</div></div><div class="info-row"><div class="i-lbl">Professor</div><div class="i-val">${e.professor}</div></div><div class="info-row"><div class="i-lbl">Time</div><div class="i-val">${fmtT(e.start)} – ${fmtT(e.end)}</div></div><div class="info-row" style="grid-column:span 2"><div class="i-lbl">Program</div><div class="i-val">${e.program}</div></div></div>`;
+    sb.innerHTML=`<div class="st-title"><i class="fa-solid fa-circle-xmark"></i> In Session · ends in ${rem} min</div><div class="info-grid"><div class="info-row"><div class="i-lbl">Course</div><div class="i-val">${e.course}</div></div><div class="info-row"><div class="i-lbl">Code</div><div class="i-val">${e.code}</div></div><div class="info-row"><div class="i-lbl">Professor</div><div class="i-val">${effProfHtml(e)}</div></div><div class="info-row"><div class="i-lbl">Time</div><div class="i-val">${fmtT(e.start)} – ${fmtT(e.end)}</div></div><div class="info-row" style="grid-column:span 2"><div class="i-lbl">Program</div><div class="i-val">${e.program}</div></div></div>`;
   } else if(st.status==='soon'){
     const e=st.entry,diff=t2m(e.start)-min;
     sb.className='m-status soon';
-    sb.innerHTML=`<div class="st-title"><i class="fa-solid fa-clock"></i> Starting in ${diff} minutes</div><div class="info-grid"><div class="info-row"><div class="i-lbl">Course</div><div class="i-val">${e.course}</div></div><div class="info-row"><div class="i-lbl">Code</div><div class="i-val">${e.code}</div></div><div class="info-row"><div class="i-lbl">Professor</div><div class="i-val">${e.professor}</div></div><div class="info-row"><div class="i-lbl">Starts At</div><div class="i-val">${fmtT(e.start)}</div></div></div>`;
+    sb.innerHTML=`<div class="st-title"><i class="fa-solid fa-clock"></i> Starting in ${diff} minutes</div><div class="info-grid"><div class="info-row"><div class="i-lbl">Course</div><div class="i-val">${e.course}</div></div><div class="info-row"><div class="i-lbl">Code</div><div class="i-val">${e.code}</div></div><div class="info-row"><div class="i-lbl">Professor</div><div class="i-val">${effProfHtml(e)}</div></div><div class="info-row"><div class="i-lbl">Starts At</div><div class="i-val">${fmtT(e.start)}</div></div></div>`;
   } else {
     sb.className='m-status free';
     sb.innerHTML=`<div class="st-title"><i class="fa-solid fa-circle-check"></i> Free Now — available to use</div>`;
@@ -548,7 +548,7 @@ function openRoom(id){
   const nxtEntry=SCHEDULE.filter(s=>s.roomId===id&&s.day===today&&t2m(s.start)>min).sort((a,b)=>t2m(a.start)-t2m(b.start))[0];
   const ne=document.getElementById('m-next');
   ne.style.display='';
-  ne.innerHTML=nxtEntry?`<div class="m-next-lbl">Next class today:</div><div>${fmtT(nxtEntry.start)} · <strong>${nxtEntry.code}</strong> · ${nxtEntry.professor}</div>`:'<div style="color:var(--txt-muted);font-size:12px">No more classes today in this room</div>';
+  ne.innerHTML=nxtEntry?`<div class="m-next-lbl">Next class today:</div><div>${fmtT(nxtEntry.start)} · <strong>${nxtEntry.code}</strong> · ${effProfHtml(nxtEntry)}</div>`:'<div style="color:var(--txt-muted);font-size:12px">No more classes today in this room</div>';
   const todays=SCHEDULE.filter(s=>s.roomId===id&&s.day===today).sort((a,b)=>t2m(a.start)-t2m(b.start));
   const ms=document.getElementById('m-sched');
   ms.innerHTML=todays.length===0?'<div style="color:var(--txt-muted);font-size:12.5px;padding:4px 0">No classes scheduled today</div>'
@@ -573,9 +573,9 @@ function renderCourseSearch(){
   const {min}=getNow(),today=getToday();
   const cont=document.getElementById('cs-results');
   if(!q){cont.innerHTML='<div class="empty-state" style="margin-top:40px"><i class="fa-solid fa-magnifying-glass"></i>Start typing to find a course</div>';return;}
-  const matches=SCHEDULE.filter(s=>s.course.toLowerCase().includes(q)||s.code.toLowerCase().includes(q)||s.professor.toLowerCase().includes(q)||s.program.toLowerCase().includes(q));
+  const matches=SCHEDULE.filter(s=>s.course.toLowerCase().includes(q)||s.code.toLowerCase().includes(q)||s.professor.toLowerCase().includes(q)||effProf(s).toLowerCase().includes(q)||s.program.toLowerCase().includes(q));
   const grouped={};
-  matches.forEach(s=>{if(!grouped[s.code])grouped[s.code]={code:s.code,course:s.course,professor:s.professor,program:s.program,entries:[]};grouped[s.code].entries.push(s);});
+  matches.forEach(s=>{if(!grouped[s.code])grouped[s.code]={code:s.code,course:s.course,professor:effProfHtml(s),program:s.program,entries:[]};grouped[s.code].entries.push(s);});
   const courses=Object.values(grouped);
   if(!courses.length){cont.innerHTML=`<div class="empty-state"><i class="fa-solid fa-face-frown-open"></i>No courses match "<strong>${q}</strong>"</div>`;return;}
   cont.innerHTML=`<div class="res-count">${courses.length} course${courses.length>1?'s':''} found</div>`+
@@ -612,7 +612,7 @@ function renderSchedTable(){
     :entries.map(e=>{
       const isNow=isToday&&t2m(e.start)<=min&&t2m(e.end)>min;
       const isSoon=isToday&&t2m(e.start)>min&&t2m(e.start)-min<=15;
-      return`<tr class="sched-row ${isNow?'row-now':''}" onclick="openClass(${e.id})" title="Click for details"><td style="color:var(--txt-muted);font-variant-numeric:tabular-nums;white-space:nowrap">${fmtT(e.start)} – ${fmtT(e.end)}</td><td><div class="cname">${e.course}</div>${isNow?`<span class="live-badge" style="margin-top:4px;display:inline-flex"><i class="fa-solid fa-circle" style="font-size:7px"></i> In Session · started ${fmtDur(min-t2m(e.start))} ago</span>`:''}${isSoon?'<div style="font-size:11px;font-weight:700;color:var(--yellow);margin-top:3px">Starting soon</div>':''}</td><td><span class="code-pill">${e.code}</span></td><td><span class="room-link" onclick="event.stopPropagation();openRoom('${e.roomId}')"><i class="fa-solid fa-door-open"></i>${e.roomId}</span></td><td style="color:var(--txt-mid)">${e.professor}</td><td><span class="prog-tag">${e.program}</span></td></tr>`;
+      return`<tr class="sched-row ${isNow?'row-now':''}" onclick="openClass(${e.id})" title="Click for details"><td style="color:var(--txt-muted);font-variant-numeric:tabular-nums;white-space:nowrap">${fmtT(e.start)} – ${fmtT(e.end)}</td><td><div class="cname">${e.course}</div>${isNow?`<span class="live-badge" style="margin-top:4px;display:inline-flex"><i class="fa-solid fa-circle" style="font-size:7px"></i> In Session · started ${fmtDur(min-t2m(e.start))} ago</span>`:''}${isSoon?'<div style="font-size:11px;font-weight:700;color:var(--yellow);margin-top:3px">Starting soon</div>':''}</td><td><span class="code-pill">${e.code}</span></td><td><span class="room-link" onclick="event.stopPropagation();openRoom('${e.roomId}')"><i class="fa-solid fa-door-open"></i>${e.roomId}</span></td><td style="color:var(--txt-mid)">${effProfHtml(e)}</td><td><span class="prog-tag">${e.program}</span></td></tr>`;
     }).join('');
 }
 
@@ -644,7 +644,7 @@ function renderClass(){
   document.getElementById('c-grid').innerHTML=`
     <div class="c-cell big"><div class="i-lbl">Room number</div><div class="i-val">${room.id}</div></div>
     <div class="c-cell big"><div class="i-lbl">Chairs</div><div class="i-val">${room.capacity||'–'}</div></div>
-    <div class="c-cell wide"><div class="i-lbl">Professor</div><div class="i-val">${e.professor}</div></div>
+    <div class="c-cell wide"><div class="i-lbl">Professor</div><div class="i-val">${effProfHtml(e)}</div></div>
     <div class="c-cell wide"><div class="i-lbl">Program</div><div class="i-val">${e.program}</div></div>`;
   document.getElementById('c-room-btn').onclick=()=>{closeClass(null,true);openRoom(e.roomId);};
 }

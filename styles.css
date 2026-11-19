@@ -344,3 +344,6 @@ input,select,textarea{font-family:inherit}
 #fp-svg .fp-card:hover{filter:drop-shadow(0 8px 12px rgba(0,0,0,.3))}
 .free-chip,.class-item{transition:transform .15s ease,box-shadow .15s ease}
 .free-chip:hover,.class-item:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.12)}
+
+/* Substitute professor badge */
+.sub-badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;margin-left:4px;white-space:nowrap;vertical-align:middle}

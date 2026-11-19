@@ -129,6 +129,28 @@
           <tbody id="adm-profs-body"></tbody>
         </table>
       </div>
+      <!-- Substitute professors -->
+      <div class="card" style="margin-top:22px;padding:18px">
+        <div class="card-title" style="margin-bottom:4px"><i class="fa-solid fa-user-clock" style="color:var(--red)"></i> Substitute Professor</div>
+        <div style="font-size:12px;color:var(--txt-muted);margin-bottom:14px">If a professor can't come, pick the dates and a colleague from the same department to cover. The portal shows the substitute automatically.</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">
+          <div class="ff"><label>Absent professor</label><select id="sb-absent" onchange="sbRefreshClasses()"></select></div>
+          <div class="ff"><label>From</label><input type="date" id="sb-from" onchange="sbRefreshClasses()"></div>
+          <div class="ff"><label>To</label><input type="date" id="sb-to" onchange="sbRefreshClasses()"></div>
+        </div>
+        <div class="ff"><label>Classes to cover</label><div id="sb-classes" style="display:flex;flex-direction:column;gap:4px;font-size:12.5px"></div></div>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;align-items:end">
+          <div class="ff" style="margin:0"><label>Substitute <label style="font-weight:500;margin-left:8px"><input type="checkbox" id="sb-other" onchange="sbRefreshSubs()"> include other departments</label></label><select id="sb-sub"></select></div>
+          <div class="ff" style="margin:0"><label>Note (optional)</label><input type="text" id="sb-note" placeholder="e.g. Sick leave"></div>
+        </div>
+        <div style="margin-top:12px"><button class="btn btn-red btn-sm" onclick="sbAssign()"><i class="fa-solid fa-user-check"></i> Assign substitute</button></div>
+        <div class="tbl-wrap" style="margin-top:16px">
+          <table class="dtbl">
+            <thead><tr><th>ABSENT</th><th>SUBSTITUTE</th><th>DATES</th><th>CLASSES</th><th>NOTE</th><th>STATUS</th><th style="width:60px"></th></tr></thead>
+            <tbody id="sb-body"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- ══ TAB: ANNOUNCEMENTS ══ -->
@@ -574,7 +596,7 @@ function renderAdmSched(){
       <td style="font-weight:600">${e.course}</td>
       <td><span class="code-pill">${e.code}</span></td>
       <td><strong>${e.roomId}</strong></td>
-      <td>${e.professor}</td>
+      <td>${effProfHtml(e)}</td>
       <td><span class="prog-tag">${e.program}</span></td>
       <td style="display:flex;gap:5px">
         <button class="btn btn-out btn-sm" onclick="editEntry(${e.id})" title="Edit"><i class="fa-solid fa-pencil"></i></button>
@@ -687,10 +709,107 @@ function toggleMaint(id){
   renderAdmRooms();
 }
 
+
+// ═══════════════════════════════════════════════
+// SUBSTITUTE PROFESSORS
+// ═══════════════════════════════════════════════
+const sbOv=(a,b)=>t2m(a.start)<t2m(b.end)&&t2m(b.start)<t2m(a.end);
+function sbDates(from,to){
+  const out=[];if(!from||!to||from>to)return out;
+  const d=new Date(from+'T00:00:00'),end=new Date(to+'T00:00:00');
+  for(;d<=end&&out.length<200;d.setDate(d.getDate()+1)){const wd=d.getDay();if(wd>=1&&wd<=5)out.push({date:ymd(d),day:wd});}
+  return out;
+}
+const sbDays=['','Mon','Tue','Wed','Thu','Fri'];
+function sbAffected(){
+  const ab=document.getElementById('sb-absent').value,ds=sbDates(document.getElementById('sb-from').value,document.getElementById('sb-to').value);
+  return SCHEDULE.filter(s=>s.professor===ab&&ds.some(d=>d.day===s.day)).sort((a,b)=>a.day-b.day||t2m(a.start)-t2m(b.start));
+}
+function sbSelected(){
+  const ids=[...document.querySelectorAll('#sb-classes input:checked')].map(i=>+i.value);
+  return sbAffected().filter(s=>ids.includes(s.id));
+}
+function sbInit(){
+  const ab=document.getElementById('sb-absent'),names=PROFESSORS.map(p=>p.name);
+  if([...ab.options].map(o=>o.value).join('|')!==names.join('|')){
+    const cur=ab.value;ab.innerHTML=names.map(n=>`<option value="${n.replace(/"/g,'&quot;')}">${n}</option>`).join('');
+    if(names.includes(cur))ab.value=cur;
+  }
+  const f=document.getElementById('sb-from'),t=document.getElementById('sb-to');
+  if(!f.value){f.value=ymd(new Date());t.value=f.value;}
+  sbRefreshClasses();sbRenderList();
+}
+function sbRefreshClasses(){
+  const box=document.getElementById('sb-classes'),aff=sbAffected();
+  box.innerHTML=aff.length?aff.map(s=>`<label><input type="checkbox" value="${s.id}" checked onchange="sbRefreshSubs()"> <b>${sbDays[s.day]}</b> ${fmtT(s.start)}–${fmtT(s.end)} · ${s.code} ${s.course} · ${s.roomId}</label>`).join('')
+    :'<span style="color:var(--txt-muted)">This professor has no classes in the selected dates.</span>';
+  sbRefreshSubs();
+}
+// First clash found if `name` were to teach the given occurrences, else ''
+function sbClash(name,occ){
+  for(const o of occ){
+    const own=SCHEDULE.find(x=>x.professor===name&&x.day===o.e.day&&x.id!==o.e.id&&sbOv(x,o.e)&&!subFor(x,o.date));
+    if(own)return `teaches ${own.code} ${sbDays[own.day]} ${fmtT(own.start)}–${fmtT(own.end)}`;
+    for(const r of SUBSTITUTIONS){
+      if(r.sub!==name||o.date<r.from||o.date>r.to)continue;
+      const cov=SCHEDULE.find(x=>x.professor===r.absent&&x.day===o.e.day&&(!r.entryIds||r.entryIds.includes(x.id))&&sbOv(x,o.e));
+      if(cov)return `already covering ${cov.code} ${sbDays[cov.day]} ${fmtT(cov.start)}–${fmtT(cov.end)}`;
+    }
+  }
+  return '';
+}
+function sbRefreshSubs(){
+  const sel=document.getElementById('sb-sub'),ab=document.getElementById('sb-absent').value,cur=sel.value;
+  const abP=PROFESSORS.find(p=>p.name===ab),sch=sbSelected(),ds=sbDates(document.getElementById('sb-from').value,document.getElementById('sb-to').value);
+  const occ=[];sch.forEach(e=>ds.filter(d=>d.day===e.day).forEach(d=>occ.push({e,date:d.date})));
+  const others=PROFESSORS.filter(p=>p.name!==ab);
+  const same=others.filter(p=>abP&&p.dept&&p.dept===abP.dept),diff=others.filter(p=>!same.includes(p));
+  const opt=p=>{const c=occ.length?sbClash(p.name,occ):'';return `<option value="${p.name.replace(/"/g,'&quot;')}" ${c?'disabled':''}>${p.name}${c?' — busy: '+c:' ✓ free'}</option>`;};
+  let h=`<option value="">— choose substitute —</option>`;
+  h+=`<optgroup label="Same department${abP&&abP.dept?' ('+abP.dept+')':''}">${same.length?same.map(opt).join(''):'<option disabled>No other professor in this department</option>'}</optgroup>`;
+  if(document.getElementById('sb-other').checked&&diff.length)h+=`<optgroup label="Other departments">${diff.map(opt).join('')}</optgroup>`;
+  sel.innerHTML=h;
+  if([...sel.options].some(o=>o.value===cur&&!o.disabled))sel.value=cur;
+}
+function sbAssign(){
+  const absent=document.getElementById('sb-absent').value,sub=document.getElementById('sb-sub').value,
+        from=document.getElementById('sb-from').value,to=document.getElementById('sb-to').value,note=document.getElementById('sb-note').value.trim();
+  const sch=sbSelected(),ds=sbDates(from,to);
+  if(!from||!to||from>to){alert('Choose a valid date range.');return;}
+  if(!sch.length){alert('Select at least one class to cover.');return;}
+  if(!sub){alert('Choose a substitute professor.');return;}
+  const occ=[];sch.forEach(e=>ds.filter(d=>d.day===e.day).forEach(d=>occ.push({e,date:d.date})));
+  const taken=occ.find(o=>subFor(o.e,o.date));
+  if(taken){alert(`${taken.e.code} on ${taken.date} already has a substitute (${subFor(taken.e,taken.date).sub}). Remove that one first.`);return;}
+  const clash=sbClash(sub,occ);
+  if(clash){alert(`${sub} is busy: ${clash}.`);return;}
+  SUBSTITUTIONS.push({id:nextId(),absent,sub,from,to,entryIds:sch.map(s=>s.id),note});
+  saveAll();document.getElementById('sb-note').value='';
+  sbRefreshClasses();sbRenderList();renderAdmSched&&renderAdmSched();
+  showToast(`${sub} will cover for ${absent} ✓`);
+}
+function sbDelete(id){
+  if(!confirm('Cancel this substitution? The original professor will show again.'))return;
+  const i=SUBSTITUTIONS.findIndex(r=>r.id===id);if(i>=0)SUBSTITUTIONS.splice(i,1);
+  saveAll();sbRefreshSubs();sbRenderList();renderAdmSched&&renderAdmSched();showToast('Substitution cancelled');
+}
+function sbRenderList(){
+  const today=ymd(new Date()),body=document.getElementById('sb-body');
+  if(!SUBSTITUTIONS.length){body.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--txt-muted);padding:16px">No substitutions set.</td></tr>';return;}
+  body.innerHTML=[...SUBSTITUTIONS].sort((a,b)=>b.from.localeCompare(a.from)).map(r=>{
+    const st=r.to<today?['Finished','#E5E7EB','#4B5563']:r.from>today?['Upcoming','#E0F2FE','#075985']:['Active now','#DCFCE7','#166534'];
+    const codes=[...new Set(SCHEDULE.filter(s=>r.entryIds?r.entryIds.includes(s.id):s.professor===r.absent).map(s=>s.code))].join(', ')||'—';
+    return `<tr><td>${r.absent}</td><td><b>${r.sub}</b></td><td style="white-space:nowrap">${r.from}${r.to!==r.from?' → '+r.to:''}</td><td style="font-size:11.5px">${codes}</td><td style="font-size:11.5px;color:var(--txt-muted)">${(r.note||'—').replace(/</g,'&lt;')}</td>
+      <td><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;background:${st[1]};color:${st[2]}">${st[0]}</span></td>
+      <td><button class="btn btn-out btn-sm" onclick="sbDelete(${r.id})" title="Cancel" style="color:var(--red);border-color:#FECACA!important"><i class="fa-solid fa-trash-can"></i></button></td></tr>`;
+  }).join('');
+}
+
 // ═══════════════════════════════════════════════
 // TAB 3 — PROFESSORS
 // ═══════════════════════════════════════════════
 function renderAdmProfs(){
+  setTimeout(sbInit,0);
   document.getElementById('adm-profs-body').innerHTML=PROFESSORS.map(p=>{
     const courses=[...new Set(SCHEDULE.filter(s=>s.professor===p.name).map(s=>s.code))];
     const hrs=SCHEDULE.filter(s=>s.professor===p.name).reduce((acc,s)=>{

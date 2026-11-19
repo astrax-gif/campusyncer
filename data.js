@@ -88,6 +88,10 @@ let ANNOUNCEMENTS = [
   {id:2, title:'Mid-term Exams Schedule', msg:'Mid-term exams run 18–22 November. Check your programme calendar for room assignments.', type:'warning', created:'2026-11-12', expires:'2026-11-23'},
 ];
 
+// Professor substitutions set by admin (persisted):
+// { id, absent:'Prof name', sub:'Prof name', from:'YYYY-MM-DD', to:'YYYY-MM-DD', entryIds:[...]|null, note }
+let SUBSTITUTIONS = [];
+
 let PROFESSORS = [
   {id:1, name:'Prof. Sarah Mitchell',    dept:'Business',   email:'s.mitchell@ue-dubai.ae',  phone:'+971 4 XXX 0001'},
   {id:2, name:'Dr. Khalid Al-Rashid',   dept:'Business',   email:'k.alrashid@ue-dubai.ae',  phone:'+971 4 XXX 0002'},
@@ -148,6 +152,21 @@ const fmtT = t => { const [h,m]=t.split(':').map(Number); return `${h%12||12}:${
 const DAY_NAMES=['','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const DAY_SHORT=['','Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
+// ── Substitute professors ───────────────────────────────────────────
+function ymd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+// Date (YYYY-MM-DD) of weekday `day` (1=Mon..5=Fri) in the current week
+function weekDate(day){ const d=new Date(); d.setDate(d.getDate()-((d.getDay()+6)%7)+(day-1)); return ymd(d); }
+// Substitution covering this class on this date, or null
+function subFor(entry,date){
+  date=date||weekDate(entry.day);
+  return SUBSTITUTIONS.find(s=>s.absent===entry.professor && date>=s.from && date<=s.to && (!s.entryIds||s.entryIds.includes(entry.id)))||null;
+}
+// Name of whoever is actually teaching (substitute if one is assigned)
+function effProf(entry,date){ const s=subFor(entry,date); return s?s.sub:entry.professor; }
+function effProfHtml(entry,date){
+  const s=subFor(entry,date); if(!s) return entry.professor;
+  return `${s.sub} <span class="sub-badge" title="Covering for ${s.absent}">Substitute for ${s.absent}</span>`;
+}
 function getNow(){ const d=new Date(); return {jsDay:d.getDay(),min:d.getHours()*60+d.getMinutes()}; }
 function getToday(){ const d=new Date().getDay(); return (d===0||d===6)?1:d; }
 function getRoom(id){ return ROOMS.find(r=>r.id===id); }
@@ -201,6 +220,7 @@ function saveAll(){
       sc: SCHEDULE,
       an: ANNOUNCEMENTS,
       pr: PROFESSORS,
+      su: SUBSTITUTIONS,
       ps: PORTAL_SETTINGS,
       ni: _nextId,
     }));
@@ -234,6 +254,7 @@ function loadAll(){
     // Arrays – clear and re-fill in-place (avoids re-assignment)
     if(Array.isArray(d.sc)){ SCHEDULE.length=0;      SCHEDULE.push(...d.sc); }
     if(Array.isArray(d.an)){ ANNOUNCEMENTS.length=0;  ANNOUNCEMENTS.push(...d.an); }
+    if(Array.isArray(d.su)){ SUBSTITUTIONS.length=0; SUBSTITUTIONS.push(...d.su); }
     if(Array.isArray(d.pr)){ PROFESSORS.length=0;     PROFESSORS.push(...d.pr); }
     // Settings object – merge
     if(d.ps) Object.assign(PORTAL_SETTINGS, d.ps);
