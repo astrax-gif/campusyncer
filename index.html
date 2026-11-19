@@ -345,7 +345,9 @@ function renderFP(){
     const c=statusC[st.status]||statusC.empty;
     const p=3,rx=x+p,ry=y+p,rw=w-p*2,rh=h-p*2,midX=rx+rw/2;
     const fillAttr=st.status==='maintenance'?'fill="url(#maint)"':`fill="${c.fill}"`;
-    svg+=`<rect class="fp-room" x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="4" ${fillAttr} stroke="${c.stroke}" stroke-width="${c.sw}" style="cursor:pointer" onclick="openRoom('${id}')" onmouseenter="fpHover('${id}',event)" onmouseleave="fpOut()"/>`;
+    const cx=midX,cy=ry+rh/2,orig=`transform-origin:${cx}px ${cy}px`;
+    svg+=`<g class="fp-card"><g class="fp-front" style="${orig}">`;
+    svg+=`<rect class="fp-room" x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="4" ${fillAttr} stroke="${c.stroke}" stroke-width="${c.sw}"/>`;
     if(dotC[st.status]) svg+=`<circle cx="${rx+rw-11}" cy="${ry+11}" r="6" fill="${dotC[st.status]}" ${F}/>`;
 
     const isNum=/^\d+$/.test(id);
@@ -390,6 +392,32 @@ function renderFP(){
         }
       }
     }
+    svg+=`</g>`; // end front
+    // ── back of the card (shown when flipped) ──
+    {
+      const bl={occ:['In Session','#F87171'],soon:['Starting Soon','#FCD34D'],free:['Free Now','#4ADE80'],empty:['Free Now','#4ADE80'],staff:['Staff only','#F87171'],public:['Open to everyone','#7DD3FC'],maintenance:['Maintenance','#9CA3AF'],event:['Event Running','#FBBF24'],booked:['Booked for Event','#C4B5FD']}[st.status]||['',''];
+      const maxc=Math.max(8,Math.floor(rw/5.6));
+      const cut=t=>{t=String(t||'');return t.length>maxc?t.slice(0,maxc-1)+'…':t;};
+      const lines=[[room.name,12,'800','#fff'],[bl[0],10.5,'700',bl[1]]];
+      if((st.status==='occ'||st.status==='soon')&&st.entry){
+        lines.push([st.entry.code+' · '+st.entry.course,9.5,'600','#E5E7EB'],[st.entry.professor,9,'400','#D1D5DB'],
+          [st.status==='occ'?`Ends in ${fmtDur(t2m(st.entry.end)-min)}`:`Starts ${fmtT(st.entry.start)} (in ${fmtDur(t2m(st.entry.start)-min)})`,9,'400','#9CA3AF']);
+      } else if(st.status==='free'||st.status==='empty'){
+        const nx=SCHEDULE.filter(q=>q.roomId===id&&q.day===today&&t2m(q.start)>min).sort((a,b)=>t2m(a.start)-t2m(b.start))[0];
+        lines.push([nx?`Next: ${fmtT(nx.start)} · ${nx.code}`:'No more classes today',9.5,'400','#D1D5DB']);
+      }
+      if(room.capacity>0) lines.push([`${room.capacity} chairs`,9,'400','#9CA3AF']);
+      lines.push(['Click for details',8.5,'700','#FCA5A5']);
+      svg+=`<g class="fp-back" style="${orig}"><rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="4" fill="#1F2937" stroke="${c.stroke}" stroke-width="2"/>`;
+      let ty=ry+(rh<70?15:22);
+      lines.forEach(([t,fz,fw,col])=>{
+        if(ty>y+h-6) return;
+        svg+=`<text x="${midX}" y="${ty}" text-anchor="middle" font-size="${fz}" font-weight="${fw}" fill="${col}" ${F}>${cut(t).replace(/&/g,'&amp;').replace(/</g,'&lt;')}</text>`;
+        ty+=fz+(rh<70?5:7);
+      });
+      svg+=`</g>`;
+    }
+    svg+=`<rect class="fp-hit" x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="4" fill="rgba(0,0,0,0)" onclick="openRoom('${id}')"/></g>`;
   });
 
   // Movable wall 204+205: only shown when BOTH rooms are actively in use at the same time
@@ -655,7 +683,7 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 function init(){
   loadAll(); // pick up any changes made in admin
   updateClock();
-  setInterval(()=>{loadAll();updateClock();if(curView==='dashboard')renderDash();if(curView==='schedule')renderSchedTable();if(curClassId)renderClass();},30000);
+  setInterval(()=>{loadAll();updateClock();if(curView==='dashboard'&&!document.querySelector('.fp-card:hover'))renderDash();if(curView==='schedule')renderSchedTable();if(curClassId)renderClass();},30000);
   renderAnnouncements();
   renderDash();
   document.getElementById('f-time').value=m2t(getNow().min);
