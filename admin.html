@@ -263,12 +263,14 @@
       <div id="imp-preview" style="display:none">
         <div class="tbl-wrap" style="max-height:48vh;overflow:auto;margin-top:12px">
           <table class="dtbl">
-            <thead><tr><th></th><th>DAY</th><th>TIME</th><th>ROOM</th><th>COURSE</th><th>CODE</th><th>PROFESSOR</th><th>STATUS</th></tr></thead>
+            <thead><tr><th></th><th>DAY</th><th>TIME</th><th>STUDENTS</th><th>ROOM</th><th>COURSE</th><th>CODE</th><th>PROFESSOR</th><th>STATUS</th></tr></thead>
             <tbody id="imp-body"></tbody>
           </table>
         </div>
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:14px">
           <div id="imp-sum" style="font-size:12.5px"></div>
+          <button class="btn btn-out btn-sm" onclick="impAutoAlloc(false)" title="Fill empty or too-small rooms using the Students column"><i class="fa-solid fa-wand-magic-sparkles"></i> Auto-allocate rooms</button>
+          <button class="btn btn-out btn-sm" onclick="impAutoAlloc(true)" title="Re-assign every row that has a student count">Re-allocate all</button>
           <label style="font-size:12.5px"><input type="radio" name="imp-mode" value="append" checked onchange="impRefresh()"> Add to current schedule</label>
           <label style="font-size:12.5px"><input type="radio" name="imp-mode" value="replace" onchange="impRefresh()"> Replace whole schedule</label>
           <button class="btn btn-red" id="imp-go" style="margin-left:auto" onclick="impCommit()"></button>
@@ -377,7 +379,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-<script src="import-schedule.js?v=20261115"></script>
+<script src="import-schedule.js?v=20261119"></script>
 <script src="data.js?v=20261115"></script>
 <script>
 // ═══════════════════════════════════════════════
@@ -914,6 +916,6 @@ function addProf(){
 let toastTmr;
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTmr);toastTmr=setTimeout(()=>t.classList.remove('show'),2800);}
 </script>
-<script src="import-ui.js?v=20261115"></script>
+<script src="import-ui.js?v=20261119"></script>
 </body>
 </html>

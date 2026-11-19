@@ -74,6 +74,8 @@
       if (tr) { out.start = tr.start; out.end = tr.end; rest = rest.replace(tr.text, ' '); }
     }
     if (!out.day) { const d = findDayIn(rest); if (d) { out.day = d.day; rest = rest.replace(d.text, ' '); } }
+    const sm = /(\d{1,3})\s*(?:students?|pax|seats|enrolled|attendees)\b|(?:students?|enrol+ed|pax)\s*[:=]\s*(\d{1,3})/i.exec(rest);
+    if (sm) { out.students = +(sm[1] || sm[2]); rest = rest.replace(sm[0], ' '); }
     const rm = findRoom(rest, ctx);
     if (rm) { out.roomId = rm.id; rest = rest.replace(rm.text, ' '); }
     const pf = findProf(rest, ctx);
@@ -87,8 +89,9 @@
   }
 
   // ─── mode A: a normal list with column headers ───────────────
-  const HDR_ORDER = ['code', 'day', 'start', 'end', 'time', 'room', 'prof', 'program', 'semester', 'course'];
+  const HDR_ORDER = ['students', 'code', 'day', 'start', 'end', 'time', 'room', 'prof', 'program', 'semester', 'course'];
   const HDR = {
+    students: /(students?|enrol+(?:ed|ment)?|headcount|head\s*count|class\s*size|group\s*size|cohort\s*size|\bpax\b|attendees|no\.?\s*of\s*(?:students|pax))/i,
     code: /code/i, day: /^(day|weekday)$/i, start: /^(start|from|begin|starts?)(\s*time)?$/i,
     end: /^(end|to|until|finish|ends?)(\s*time)?$/i, time: /^(time|timing|slot|hours?|period)$/i,
     room: /(room|classroom|venue|hall|location|class\s*n)/i, prof: /(prof|lecturer|instructor|teacher|faculty|tutor|staff)/i,
@@ -116,6 +119,7 @@
         // dedicated columns win over guessing
         if (cell('course')) e.course = cell('course');
         if (cell('room')) { const rm = findRoom(cell('room'), ctx); e.roomId = rm ? rm.id : cell('room').toUpperCase(); }
+        if (cell('students')) { const n = parseInt(cell('students').replace(/[^0-9]/g, ''), 10); if (n > 0) e.students = n; }
         if (cell('code')) e.code = cell('code').replace(/\s/g, '');
         if (cell('prof')) e.professor = cell('prof');
         if (cell('program')) e.program = cell('program');
@@ -195,7 +199,7 @@
     return entries.map((e, n) => ({
       include: true, day: e.day || 0, start: e.start || '', end: e.end || '', roomId: e.roomId || '',
       course: e.course || '', code: e.code || initials(e.course || '') || 'CLS' + (n + 1),
-      professor: e.professor || 'TBA', program: e.program || 'All Programs', semester: e.semester || semester || '',
+      students: +e.students || 0, professor: e.professor || 'TBA', program: e.program || 'All Programs', semester: e.semester || semester || '',
     }));
   }
 
@@ -219,8 +223,42 @@
       const c2 = entries.find((x, j) => j < i && x.include && !x.errs.length && clash(x));
       if (c2) e.errs.push(`Clashes with ${c2.code} earlier in this file`);
       if (room && room.capacity === 0) e.warns.push('Room has no chair count');
+      if (room && e.students > 0 && room.capacity > 0 && e.students > room.capacity) e.errs.push(`Room seats ${room.capacity} but class has ${e.students} students`);
     });
     return entries;
+  }
+
+  // ─── auto-allocation: smallest free room that fits the class ─
+  // Fills in a room for every included row that has a student count and either
+  // has no room yet or sits in a room that is too small. Rows that already have a
+  // big-enough room are kept. Biggest classes are placed first so they get the
+  // big rooms; each class gets the smallest suitable free room.
+  // ctx.roomInfo[id] = { teachable, capacity, type }
+  function allocate(entries, existing, ctx, mode, opts) {
+    opts = opts || {};
+    const base = mode === 'replace' ? [] : existing;
+    const rooms = Object.keys(ctx.roomInfo).map(id => Object.assign({ id }, ctx.roomInfo[id]))
+      .filter(r => r.teachable && r.capacity > 0).sort((a, b) => a.capacity - b.capacity || a.id.localeCompare(b.id));
+    const overlap = (x, e) => x.day === e.day && toMin(x.start) < toMin(e.end) && toMin(e.start) < toMin(x.end);
+    const timeOk = e => e.day >= 1 && e.day <= 5 && e.start && e.end && toMin(e.start) < toMin(e.end);
+    const needs = e => e.include && timeOk(e) && e.students > 0 && (opts.force ||
+      !e.roomId || !ctx.roomInfo[e.roomId] || (ctx.roomInfo[e.roomId].capacity > 0 && ctx.roomInfo[e.roomId].capacity < e.students));
+    const todo = entries.filter(needs).sort((a, b) => b.students - a.students || toMin(a.start) - toMin(b.start));
+    const placed = entries.filter(e => e.include && e.roomId && !todo.includes(e) && timeOk(e));
+    const isLab = e => /\b(lab|laboratory)\b/i.test(e.course || '');
+    let done = 0, failed = 0;
+    todo.forEach(e => {
+      e.allocNote = '';
+      const free = r => !base.some(x => x.roomId === r.id && overlap(x, e)) && !placed.some(x => x.roomId === r.id && overlap(x, e));
+      const fits = rooms.filter(r => r.capacity >= e.students && free(r));
+      // PC labs only for lab classes; lab classes prefer PC labs
+      const isPc = r => /pc\s*lab|computer lab/i.test(r.type || '');
+      const pool = isLab(e) ? (fits.filter(isPc).length ? fits.filter(isPc) : fits) : fits.filter(r => !isPc(r));
+      const pick = pool[0];
+      if (pick) { e.roomId = pick.id; e.allocNote = `Auto: ${pick.id} (${pick.capacity} seats) for ${e.students} students`; placed.push(e); done++; }
+      else { if (!ctx.roomInfo[e.roomId]) e.roomId = ''; e.allocNote = `No free room fits ${e.students} students at this time`; failed++; }
+    });
+    return { done, failed };
   }
 
   // ─── file readers (browser only) ─────────────────────────────
@@ -288,7 +326,7 @@
     throw new Error('Unsupported file type. Use PDF, Word (.docx), Excel (.xlsx) or CSV.');
   }
 
-  const API = { parseTimeRange, parseSingleTime, parseBlocks, finalize, validate, readFile, dayOf };
+  const API = { parseTimeRange, parseSingleTime, parseBlocks, finalize, validate, allocate, readFile, dayOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   root.ScheduleImport = API;
 })(typeof window !== 'undefined' ? window : globalThis);

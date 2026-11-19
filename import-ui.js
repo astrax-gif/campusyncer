@@ -3,7 +3,7 @@ let impEntries = [], impBusy = false;
 
 function impCtx() {
   const roomInfo = {};
-  ROOMS.forEach(r => roomInfo[r.id] = { teachable: r.bookable !== false && !r.restricted && !r.publicSpace, capacity: r.capacity });
+  ROOMS.forEach(r => roomInfo[r.id] = { teachable: r.bookable !== false && !r.restricted && !r.publicSpace, capacity: r.capacity, type: r.type });
   return { rooms: ROOMS.map(r => r.id).sort((a, b) => b.length - a.length), professors: PROFESSORS.map(p => p.name), roomInfo };
 }
 function impMode() { return (document.querySelector('input[name="imp-mode"]:checked') || {}).value || 'append'; }
@@ -29,11 +29,12 @@ async function impFile(file) {
     const ctx = impCtx();
     const blocks = await ScheduleImport.readFile(file);
     impEntries = ScheduleImport.finalize(ScheduleImport.parseBlocks(blocks, ctx), ctx, PORTAL_SETTINGS.semesterName);
+    const al = ScheduleImport.allocate(impEntries, SCHEDULE, ctx, impMode());
     if (!impEntries.length) {
       document.getElementById('imp-preview').style.display = 'none';
       impStatus('Could not find any classes in this file. Each class needs at least a day, a time range (e.g. 09:00–11:00) and a room. If the file is a scanned image or photo, it has no text to read: use the original PDF/Word/Excel file instead.', 'err');
     } else {
-      impStatus(`Found ${impEntries.length} class entries in <b>${file.name}</b>. Check them below, fix anything marked in red, then import.`, 'ok');
+      impStatus(`Found ${impEntries.length} class entries in <b>${file.name}</b>. Check them below, fix anything marked in red, then import.${al.done ? ` <b>${al.done}</b> rooms were auto-allocated by student count.` : ''}${al.failed ? ` <b>${al.failed}</b> could not be placed.` : ''}`, 'ok');
       document.getElementById('imp-preview').style.display = '';
       impRender();
     }
@@ -55,14 +56,21 @@ function impRender() {
     <td><input type="checkbox" ${e.include ? 'checked' : ''} onchange="impSet(${i},'include',this.checked)"></td>
     <td><select class="imp-in" onchange="impSet(${i},'day',+this.value)">${dayOpts(e.day)}</select></td>
     <td style="white-space:nowrap"><input class="imp-in" type="time" value="${e.start}" onchange="impSet(${i},'start',this.value)"> <input class="imp-in" type="time" value="${e.end}" onchange="impSet(${i},'end',this.value)"></td>
-    <td><select class="imp-in" onchange="impSet(${i},'roomId',this.value)">${roomOpts(e.roomId)}</select></td>
+    <td><input class="imp-in" type="number" min="0" style="width:64px" value="${e.students || ''}" placeholder="—" onchange="impSet(${i},'students',+this.value||0)"></td>
+    <td><select class="imp-in" onchange="impSet(${i},'roomId',this.value)">${roomOpts(e.roomId)}</select><div style="font-size:10.5px;color:var(--txt-muted)">${e.allocNote || ''}</div></td>
     <td><input class="imp-in" style="min-width:170px" value="${(e.course || '').replace(/"/g, '&quot;')}" onchange="impSet(${i},'course',this.value)"></td>
     <td><input class="imp-in" style="width:80px" value="${(e.code || '').replace(/"/g, '&quot;')}" onchange="impSet(${i},'code',this.value)"></td>
     <td><input class="imp-in" style="min-width:140px" value="${(e.professor || '').replace(/"/g, '&quot;')}" onchange="impSet(${i},'professor',this.value)"></td>
     <td id="imp-st-${i}" style="font-size:11.5px"></td></tr>`).join('');
   impRefresh();
 }
-function impSet(i, k, v) { impEntries[i][k] = v; impRefresh(); }
+function impSet(i, k, v) { impEntries[i][k] = v; if (k === 'roomId') impEntries[i].allocNote = ''; impRefresh(); }
+// Re-run allocation. all=true re-assigns every row that has a student count.
+function impAutoAlloc(all) {
+  const r = ScheduleImport.allocate(impEntries, SCHEDULE, impCtx(), impMode(), { force: !!all });
+  impRender();
+  showToast(`${r.done} room(s) allocated` + (r.failed ? `, ${r.failed} could not be placed` : ''));
+}
 
 function impRefresh() {
   ScheduleImport.validate(impEntries, SCHEDULE, impCtx(), impMode());
@@ -89,7 +97,7 @@ function impCommit() {
   if (mode === 'replace') SCHEDULE.length = 0;
   good.forEach(e => {
     SCHEDULE.push({ id: nextId(), day: e.day, start: e.start, end: e.end, roomId: e.roomId, course: e.course.trim(), code: e.code.trim(),
-      professor: e.professor.trim() || 'TBA', program: e.program, semester: e.semester || PORTAL_SETTINGS.semesterName });
+      students: e.students || 0, professor: e.professor.trim() || 'TBA', program: e.program, semester: e.semester || PORTAL_SETTINGS.semesterName });
     const p = e.professor.trim();
     if (p && p !== 'TBA' && !PROFESSORS.some(x => x.name === p)) PROFESSORS.push({ id: nextId(), name: p, dept: 'Imported', email: '', phone: '' });
   });
@@ -102,7 +110,7 @@ function impCommit() {
 }
 
 function impTemplate() {
-  const csv = 'Day,Time,Course,Code,Room,Professor,Program\nMonday,09:00-11:00,Business Fundamentals,BUS101,214,Prof. Sarah Mitchell,BA Business Administration\n';
+  const csv = 'Day,Time,Course,Code,Students,Room,Professor,Program\nMonday,09:00-11:00,Business Fundamentals,BUS101,42,,Prof. Sarah Mitchell,BA Business Administration\n';
   const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv); a.download = 'schedule-template.csv'; a.click();
 }
 document.addEventListener('dragover', e => { if (document.getElementById('imp-overlay').classList.contains('open')) e.preventDefault(); });
