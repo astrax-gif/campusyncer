@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Raleway:wght@700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="styles.css?v=20261121">
+<link rel="stylesheet" href="styles.css?v=20261122">
 </head>
 <body>
 
@@ -190,7 +190,7 @@
 <div class="rp-lightbox" id="rp-lb" onclick="this.classList.remove('open')"><img id="rp-lb-img" alt="Room photo"></div>
 <div class="toast" id="toast"></div>
 
-<script src="data.js?v=20261121"></script>
+<script src="data.js?v=20261122"></script>
 <script>
 // ══════════════════════════════════════════════════
 // STATE
@@ -412,9 +412,16 @@ function renderFP(){
       const photo=(ROOM_PHOTOS&&ROOM_PHOTOS[id]||[])[0];
       if(photo){
         const cid='fpc-'+String(id).replace(/[^A-Za-z0-9]/g,'');
+        const bh=Math.min(rh*0.5,rh<70?30:50),by=ry+rh-bh;
         svg+=`<clipPath id="${cid}"><rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="4"/></clipPath>`;
         svg+=`<image href="${photo}" x="${rx}" y="${ry}" width="${rw}" height="${rh}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${cid})"/>`;
-        svg+=`<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="4" fill="rgba(15,23,42,.68)" stroke="${c.stroke}" stroke-width="2"/>`;
+        svg+=`<rect x="${rx}" y="${by}" width="${rw}" height="${bh}" fill="rgba(15,23,42,.72)" clip-path="url(#${cid})"/>`;
+        svg+=`<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="4" fill="none" stroke="${c.stroke}" stroke-width="2"/>`;
+        svg+=`<text x="${midX}" y="${by+(bh>40?19:14)}" text-anchor="middle" font-size="${bh>40?12:10.5}" font-weight="800" fill="#fff" ${F}>${cut(room.name).replace(/&/g,'&amp;').replace(/</g,'&lt;')}</text>`;
+        svg+=`<text x="${midX}" y="${by+(bh>40?35:26)}" text-anchor="middle" font-size="${bh>40?10.5:9}" font-weight="700" fill="${bl[1]}" ${F}>${bl[0]}</text>`;
+        svg+=`</g>`;
+        svg+=`<rect class="fp-hit" x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="4" fill="rgba(0,0,0,0)" onclick="openRoom('${id}')"/></g>`;
+        return;
       }
       let ty=ry+(rh<70?15:22);
       lines.forEach(([t,fz,fw,col])=>{
