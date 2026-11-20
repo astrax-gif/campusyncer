@@ -269,13 +269,30 @@ input,select,textarea{font-family:inherit}
 /* ── RESPONSIVE ─────── */
 @media(max-width:620px){
   .nav-tab span{display:none}.nav-tab{padding:0 10px}
+  .topbar-inner{width:100%;padding:0 10px}
+  .brand{margin-right:0}
+  .brand-logo{width:116px}
   .brand-text{display:none}
+  .nav-tabs{min-width:0}
+  .nav-tabs{justify-content:space-evenly}
+  .nav-tab{padding:0 6px;justify-content:center}
+  .nav-tab i{font-size:14.5px}
+  .topbar-right{gap:4px;min-width:0;flex-shrink:0}
+  .topbar-right .btn-sm{padding:0 8px}
+  #live-clock{min-width:76px;padding:5px 8px;font-size:11.5px;flex-shrink:0;white-space:nowrap}
   .two-col{grid-template-columns:1fr}
   .day-tabs{gap:3px}.d-tab{padding:5px 10px;font-size:11.5px}
   .adm-tabs{gap:4px}.a-tab{padding:5px 10px;font-size:11.5px}
   /* floor plan: keep rooms readable, scroll sideways instead of shrinking */
   .fp-wrap{margin:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
   #fp-svg{min-width:760px}
+}
+@media(max-width:390px){
+  .topbar-inner{padding:0 6px;gap:4px}
+  .brand-logo{width:88px}
+  .nav-tab{padding:0 4px}
+  .topbar-right .btn-sm{padding:0 6px}
+  #live-clock{min-width:68px;padding:5px}
 }
 @media print{.topbar,.finder,.overlay,.announce-banner{display:none!important}.app{padding:0}}
 
