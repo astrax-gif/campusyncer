@@ -293,6 +293,8 @@ input,select,textarea{font-family:inherit}
   .nav-tab{padding:0 4px}
   .topbar-right .btn-sm{padding:0 6px}
   #live-clock{min-width:68px;padding:5px}
+  .finder-row .f-field{min-width:0}
+  .finder-row .f-field input,.finder-row .f-field select{min-width:0}
 }
 @media print{.topbar,.finder,.overlay,.announce-banner{display:none!important}.app{padding:0}}
 
