@@ -277,6 +277,11 @@ input,select,textarea{font-family:inherit}
   .fp-wrap{margin:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
   #fp-svg{min-width:760px}
 }
+@media(max-width:390px){
+  .finder-row>.f-field:nth-child(-n+2){flex:1 1 0;min-width:0}
+  .finder-row>.f-field:nth-child(-n+2)>input,
+  .finder-row>.f-field:nth-child(-n+2)>select{min-width:0}
+}
 @media print{.topbar,.finder,.overlay,.announce-banner{display:none!important}.app{padding:0}}
 
 
