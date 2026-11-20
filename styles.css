@@ -295,6 +295,7 @@ input,select,textarea{font-family:inherit}
   #live-clock{min-width:68px;padding:5px}
   .finder-row .f-field{min-width:0}
   .finder-row .f-field input,.finder-row .f-field select{min-width:0}
+  .finder-row #f-time{width:calc(100% - 14px)}
 }
 @media print{.topbar,.finder,.overlay,.announce-banner{display:none!important}.app{padding:0}}
 
