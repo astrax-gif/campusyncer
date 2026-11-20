@@ -190,7 +190,7 @@
 <div class="rp-lightbox" id="rp-lb" onclick="this.classList.remove('open')"><img id="rp-lb-img" alt="Room photo"></div>
 <div class="toast" id="toast"></div>
 
-<script src="data.js?v=20261123"></script>
+<script src="data.js?v=20261123-shared"></script>
 <script>
 // ══════════════════════════════════════════════════
 // STATE
@@ -720,10 +720,33 @@ document.addEventListener('click',e=>{const d=document.getElementById('qs-dropdo
 let toastTmr;
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTmr);toastTmr=setTimeout(()=>t.classList.remove('show'),2800);}
 
-function init(){
-  loadAll(); // pick up any changes made in admin
+async function syncPortalData(){
+  try{
+    const result=await loadAll();
+    return !result.notModified;
+  }catch(err){
+    console.error('Could not sync shared portal data:',err);
+    return false;
+  }
+}
+async function init(){
+  try{await loadAll();}
+  catch(err){console.error('Could not load shared portal data:',err);showToast(`Shared updates unavailable: ${err.message}`);}
   updateClock();
-  setInterval(()=>{loadAll();updateClock();if(curView==='dashboard'&&!document.querySelector('.fp-card:hover'))renderDash();if(curView==='schedule')renderSchedTable();if(curClassId)renderClass();},30000);
+  setInterval(async()=>{
+    const synced=await syncPortalData();
+    updateClock();
+    if(synced&&curView==='dashboard'&&!document.querySelector('.fp-card:hover'))renderDash();
+    if(synced&&curView==='schedule')renderSchedTable();
+    if(synced&&curClassId)renderClass();
+  },30000);
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible')syncPortalData().then(synced=>{
+      if(synced&&curView==='dashboard')renderDash();
+      if(synced&&curView==='schedule')renderSchedTable();
+      if(synced&&curClassId)renderClass();
+    });
+  });
   renderAnnouncements();
   renderDash();
   document.getElementById('f-time').value=m2t(getNow().min);

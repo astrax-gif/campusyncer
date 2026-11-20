@@ -16,6 +16,8 @@ const ROUTES = {
   'GET /api/rooms':                   require('../api/rooms'),
   'GET /api/schedule':                require('../api/schedule'),
   'GET /api/announcements':           require('../api/announcements'),
+  'GET /api/state':                   require('../api/state'),
+  'PUT /api/state':                   require('../api/state'),
   'POST /api/admin/login':            require('../api/admin/login'),
   'POST /api/admin/logout':           require('../api/admin/logout'),
   'POST /api/admin/password':         require('../api/admin/password'),

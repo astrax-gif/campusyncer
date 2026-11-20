@@ -5,6 +5,18 @@ Your $200 lasts **33 months** at that size.
 
 ---
 
+## Shared admin changes on Vercel
+
+The portal stores admin edits in Supabase so they are available to every browser. Before deploying to Vercel:
+
+1. Create a Supabase project and run [`db/supabase-shared-state.sql`](db/supabase-shared-state.sql) in its SQL Editor.
+2. In Vercel project settings, add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from the Supabase project. Keep the service-role key server-only; do not use a `VITE_` variable or expose it in browser code.
+3. Redeploy the Vercel project so the API functions receive those environment variables.
+
+The public portal reads shared changes on load and refreshes them periodically. Admin saves require a valid admin/staff session and the matching permission. On the first administrator login, existing data from that browser's legacy local storage is imported into Supabase.
+
+---
+
 ## Step 1 — Create your Vultr server
 
 1. Go to [vultr.com](https://vultr.com) and log in.

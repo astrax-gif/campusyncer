@@ -402,12 +402,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="import-schedule.js?v=20261120"></script>
-<script src="data.js?v=20261120"></script>
+<script src="data.js?v=20261120-shared"></script>
 <script>
 // ═══════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════
-let admLoggedIn=false, curAdmDay=1, curAdmTab='schedule', loginType='admin', admUser=null;
+let admLoggedIn=false, curAdmDay=1, curAdmTab='schedule', loginType='admin', admUser=null, admSyncTimer=null, admSyncedAt=null;
 
 // ═══════════════════════════════════════════════
 // CLOCK
@@ -436,6 +436,26 @@ async function apiRequest(path,options){
   if(!response.ok)throw new Error(data.error||`Request failed (${response.status})`);
   return data;
 }
+async function persistChanges(section){
+  try{
+    await saveAll(section);
+    return true;
+  }catch(err){
+    console.error('Could not sync admin changes:',err);
+    try{
+      await loadAll(true);
+      if(section==='rooms')renderAdmRooms();
+      if(section==='schedule'){renderAdmSched();sbRefreshSubs();sbRenderList();}
+      if(section==='announcements')renderAnnouncements();
+      if(section==='professors')renderAdmProfs();
+      if(section==='settings')loadSettings();
+      updateQuickStats();
+      populateDropdowns();
+    }catch(refreshErr){console.error('Could not reload shared portal data:',refreshErr);}
+    showToast(`Changes were not synced: ${err.message}`);
+    return false;
+  }
+}
 async function doLogin(){
   const error=document.getElementById('login-err');
   error.style.display='none';
@@ -447,11 +467,14 @@ async function doLogin(){
     })});
     admUser=result.user;
     admLoggedIn=true;
+    await initDash();
     document.getElementById('adm-login').style.display='none';
     document.getElementById('adm-dash').style.display='';
-    initDash();
   }catch(err){
-    error.textContent=err.message.includes('Failed to fetch')
+    const loginNetworkError=!admUser&&err.message.includes('Failed to fetch');
+    admUser=null;
+    admLoggedIn=false;
+    error.textContent=loginNetworkError
       ? 'Login requires the portal server. Start it with npm start, then open http://localhost:3000/admin.html.'
       : err.message;
     error.style.display='block';
@@ -459,7 +482,9 @@ async function doLogin(){
 }
 async function doLogout(){
   try{await apiRequest('/api/admin/logout',{method:'POST'});}catch(err){console.error('Logout request failed:',err);}
+  if(admSyncTimer){clearInterval(admSyncTimer);admSyncTimer=null;}
   admLoggedIn=false;admUser=null;
+  admSyncedAt=null;
   document.getElementById('adm-login').style.display='';
   document.getElementById('adm-dash').style.display='none';
   document.getElementById('ap').value='';
@@ -469,8 +494,13 @@ document.getElementById('ap').addEventListener('keydown',e=>e.key==='Enter'&&doL
 // ═══════════════════════════════════════════════
 // DASHBOARD INIT
 // ═══════════════════════════════════════════════
-function initDash(){
-  loadAll(); // restore persisted data
+async function initDash(){
+  let shared=await loadAll();
+  if(!shared.found&&shared.legacy&&admUser.role==='admin'){
+    await saveAll('all');
+    shared=await loadAll(true);
+  }
+  admSyncedAt=shared.updatedAt||null;
   const isAdmin=admUser.role==='admin';
   const permissions=new Set(admUser.permissions||[]);
   document.getElementById('adm-user-label').textContent=isAdmin?'admin':`${admUser.displayName} · ${admUser.title}`;
@@ -483,7 +513,26 @@ function initDash(){
   renderAdmSched();
   const firstTab=[...document.querySelectorAll('#adm-tabs .a-tab')].find(tab=>tab.style.display!=='none');
   setTab(firstTab?firstTab.dataset.at:'schedule');
+  if(admSyncTimer)clearInterval(admSyncTimer);
+  admSyncTimer=setInterval(syncAdminState,30000);
 }
+async function syncAdminState(){
+  if(!admLoggedIn||document.visibilityState!=='visible')return;
+  try{
+    const shared=await loadAll();
+    if(!shared.found||!shared.updatedAt||shared.updatedAt===admSyncedAt)return;
+    admSyncedAt=shared.updatedAt;
+    updateQuickStats();
+    populateDropdowns();
+    if(curAdmTab==='schedule'){renderAdmSched();sbRefreshSubs();sbRenderList();}
+    if(curAdmTab==='rooms')renderAdmRooms();
+    if(curAdmTab==='profs')renderAdmProfs();
+    if(curAdmTab==='announce')renderAnnouncements();
+    if(curAdmTab==='reports')renderReports();
+    if(curAdmTab==='settings')loadSettings();
+  }catch(err){console.error('Could not sync admin portal data:',err);}
+}
+document.addEventListener('visibilitychange',syncAdminState);
 function updateQuickStats(){
   document.getElementById('as-rooms').textContent=ROOMS.length;
   document.getElementById('as-cls').textContent=SCHEDULE.length;
@@ -621,10 +670,10 @@ function editEntry(id){
   document.getElementById('a-prog-sel').value=e.program;
   document.getElementById('class-overlay').classList.add('open');
 }
-function delEntry(id){
+async function delEntry(id){
   if(!confirm('Remove this class from the schedule?'))return;
   SCHEDULE=SCHEDULE.filter(s=>s.id!==id);
-  saveAll();
+  if(!await persistChanges('schedule'))return;
   renderAdmSched();updateQuickStats();showToast('Class removed');
 }
 
@@ -662,7 +711,7 @@ function renderAdmRooms(){
     </tr>`;
   }).join('');
 }
-// Resize + compress so photos fit in localStorage
+// Resize + compress photos before sending them to shared storage.
 function compressImage(file,maxW=900,q=0.72){
   return new Promise((res,rej)=>{
     const fr=new FileReader();
@@ -684,28 +733,29 @@ async function uploadRoomPhotos(id,input){
     if(list.length>=6){showToast('Max 6 photos per room');break;}
     try{list.push(await compressImage(f));}catch(e){showToast('Could not read '+f.name);}
   }
-  if(saveAll()===false){list.length=before;}
-  else showToast(`${list.length-before} photo(s) added to ${id} ✓`);
+  const added=list.length-before;
+  if(added&&await persistChanges('rooms'))showToast(`${added} photo(s) added to ${id} ✓`);
   if(!list.length)delete ROOM_PHOTOS[id];
   renderAdmRooms();
 }
-function removeRoomPhoto(id,i){
+async function removeRoomPhoto(id,i){
   (ROOM_PHOTOS[id]||[]).splice(i,1);
   if(!(ROOM_PHOTOS[id]||[]).length)delete ROOM_PHOTOS[id];
-  saveAll();renderAdmRooms();showToast('Photo removed');
+  if(await persistChanges('rooms'))showToast('Photo removed');
+  renderAdmRooms();
 }
-function setRoomOverride(id, status){
+async function setRoomOverride(id, status){
   if(status){ ROOM_STATUS_OVERRIDES[id]=status; }
   else { delete ROOM_STATUS_OVERRIDES[id]; }
-  saveAll();
+  if(!await persistChanges('rooms'))return;
   renderAdmRooms();
   const labels={free:'Free',occ:'Occupied',event:'Event Running',booked:'Booked for Event',maintenance:'Maintenance','':`Auto`};
   showToast(`${id} → ${labels[status]||status}`);
 }
-function toggleMaint(id){
+async function toggleMaint(id){
   if(ROOM_MAINTENANCE[id]) delete ROOM_MAINTENANCE[id];
   else ROOM_MAINTENANCE[id]=true;
-  saveAll();
+  if(!await persistChanges('rooms'))return;
   renderAdmRooms();
 }
 
@@ -771,7 +821,7 @@ function sbRefreshSubs(){
   sel.innerHTML=h;
   if([...sel.options].some(o=>o.value===cur&&!o.disabled))sel.value=cur;
 }
-function sbAssign(){
+async function sbAssign(){
   const absent=document.getElementById('sb-absent').value,sub=document.getElementById('sb-sub').value,
         from=document.getElementById('sb-from').value,to=document.getElementById('sb-to').value,note=document.getElementById('sb-note').value.trim();
   const sch=sbSelected(),ds=sbDates(from,to);
@@ -784,14 +834,16 @@ function sbAssign(){
   const clash=sbClash(sub,occ);
   if(clash){alert(`${sub} is busy: ${clash}.`);return;}
   SUBSTITUTIONS.push({id:nextId(),absent,sub,from,to,entryIds:sch.map(s=>s.id),note});
-  saveAll();document.getElementById('sb-note').value='';
+  if(!await persistChanges('schedule'))return;
+  document.getElementById('sb-note').value='';
   sbRefreshClasses();sbRenderList();renderAdmSched&&renderAdmSched();
   showToast(`${sub} will cover for ${absent} ✓`);
 }
-function sbDelete(id){
+async function sbDelete(id){
   if(!confirm('Cancel this substitution? The original professor will show again.'))return;
   const i=SUBSTITUTIONS.findIndex(r=>r.id===id);if(i>=0)SUBSTITUTIONS.splice(i,1);
-  saveAll();sbRefreshSubs();sbRenderList();renderAdmSched&&renderAdmSched();showToast('Substitution cancelled');
+  if(!await persistChanges('schedule'))return;
+  sbRefreshSubs();sbRenderList();renderAdmSched&&renderAdmSched();showToast('Substitution cancelled');
 }
 function sbRenderList(){
   const today=ymd(new Date()),body=document.getElementById('sb-body');
@@ -828,9 +880,10 @@ function renderAdmProfs(){
     </tr>`;
   }).join('');
 }
-function delProf(id){
+async function delProf(id){
   if(!confirm('Remove this professor?'))return;
   PROFESSORS=PROFESSORS.filter(p=>p.id!==id);
+  if(!await persistChanges('professors'))return;
   renderAdmProfs();populateDropdowns();updateQuickStats();showToast('Professor removed');
 }
 
@@ -859,7 +912,7 @@ function renderAnnouncements(){
       </div>`;
     }).join('');
 }
-function addAnnouncement(){
+async function addAnnouncement(){
   const title=document.getElementById('ann-title').value.trim();
   const msg=document.getElementById('ann-msg').value.trim();
   const type=document.getElementById('ann-type').value;
@@ -868,10 +921,10 @@ function addAnnouncement(){
   ANNOUNCEMENTS.push({id:nextId(),title,msg,type,created:new Date().toISOString().split('T')[0],expires:exp});
   document.getElementById('ann-title').value='';
   document.getElementById('ann-msg').value='';
-  saveAll();
+  if(!await persistChanges('announcements'))return;
   renderAnnouncements();updateQuickStats();showToast('Announcement posted');
 }
-function delAnn(id){if(!confirm('Delete this announcement?'))return;ANNOUNCEMENTS=ANNOUNCEMENTS.filter(a=>a.id!==id);saveAll();renderAnnouncements();updateQuickStats();showToast('Announcement removed');}
+async function delAnn(id){if(!confirm('Delete this announcement?'))return;ANNOUNCEMENTS=ANNOUNCEMENTS.filter(a=>a.id!==id);if(!await persistChanges('announcements'))return;renderAnnouncements();updateQuickStats();showToast('Announcement removed');}
 
 // ═══════════════════════════════════════════════
 // TAB 5 — REPORTS
@@ -934,14 +987,13 @@ function loadSettings(){
   const info=document.getElementById('set-info');
   if(info)info.innerHTML=`Version: <strong>1.0.0</strong><br>Rooms: <strong>${ROOMS.length}</strong><br>Total schedule entries: <strong>${SCHEDULE.length}</strong><br>Built for: <strong>${PORTAL_SETTINGS.campusName}</strong>`;
 }
-function saveSettings(){
+async function saveSettings(){
   PORTAL_SETTINGS.semesterName=document.getElementById('set-sem').value;
   PORTAL_SETTINGS.semesterStart=document.getElementById('set-start').value;
   PORTAL_SETTINGS.semesterEnd=document.getElementById('set-end').value;
   PORTAL_SETTINGS.campusName=document.getElementById('set-campus').value;
   PORTAL_SETTINGS.campusAddress=document.getElementById('set-addr').value;
-  saveAll();
-  showToast('Settings saved ✓');
+  if(await persistChanges('settings'))showToast('Settings saved ✓');
 }
 async function changePassword(){
   const cur=document.getElementById('set-cur').value;
@@ -970,7 +1022,7 @@ function showAddModal(){
 }
 function closeClassModal(ev,force){if(force||(ev&&ev.target===document.getElementById('class-overlay')))document.getElementById('class-overlay').classList.remove('open');}
 
-function submitClassModal(){
+async function submitClassModal(){
   const editId=document.getElementById('edit-id').value;
   const day=parseInt(document.getElementById('a-day').value);
   const start=document.getElementById('a-start').value;
@@ -988,19 +1040,18 @@ function submitClassModal(){
   if(editId){
     const idx=SCHEDULE.findIndex(s=>s.id===parseInt(editId));
     if(idx>=0)SCHEDULE[idx]={...SCHEDULE[idx],day,start,end,roomId,course,code,professor,program,semester};
-    showToast('Class updated ✓');
   } else {
     SCHEDULE.push({id:nextId(),day,start,end,roomId,course,code,professor,program,semester});
-    showToast('Class added ✓');
   }
-  saveAll();
+  if(!await persistChanges('schedule'))return;
   closeClassModal(null,true);
   renderAdmSched();updateQuickStats();
+  showToast(editId?'Class updated ✓':'Class added ✓');
 }
 
 function showAddRoomModal(){document.getElementById('room-add-overlay').classList.add('open');}
 function closeRoomAddModal(ev,force){if(force||(ev&&ev.target===document.getElementById('room-add-overlay')))document.getElementById('room-add-overlay').classList.remove('open');}
-function addRoom(){
+async function addRoom(){
   const id=document.getElementById('nr-id').value.trim().toUpperCase();
   const name=document.getElementById('nr-name').value.trim();
   const floor=parseInt(document.getElementById('nr-floor').value);
@@ -1010,7 +1061,7 @@ function addRoom(){
   if(!id||!name||!capacity){alert('ID, name, and capacity are required.');return;}
   if(ROOMS.find(r=>r.id===id)){alert('Room ID already exists.');return;}
   ROOMS.push({id,name,floor,type,capacity,features,bookable:!['Faculty Office','Library','Cafe'].includes(type),restricted:type==='Faculty Office',publicSpace:['Library','Cafe'].includes(type)});
-  saveAll();
+  if(!await persistChanges('rooms'))return;
   closeRoomAddModal(null,true);
   renderAdmRooms();populateDropdowns();updateQuickStats();showToast('Room added ✓');
 }
@@ -1018,14 +1069,14 @@ function addRoom(){
 function clearProfForm(){['p-name','p-dept','p-email','p-phone'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});}
 function showAddProfModal(){clearProfForm();document.getElementById('prof-overlay').classList.add('open');}
 function closeProfModal(ev,force){if(force||(ev&&ev.target===document.getElementById('prof-overlay')))document.getElementById('prof-overlay').classList.remove('open');}
-function addProf(){
+async function addProf(){
   const name=document.getElementById('p-name').value.trim();
   const dept=document.getElementById('p-dept').value.trim();
   const email=document.getElementById('p-email').value.trim();
   const phone=document.getElementById('p-phone').value.trim();
   if(!name){alert('Name is required.');return;}
   PROFESSORS.push({id:nextId(),name,dept,email,phone});
-  saveAll();
+  if(!await persistChanges('professors'))return;
   clearProfForm();
   closeProfModal(null,true);
   renderAdmProfs();populateDropdowns();updateQuickStats();showToast('Professor added ✓');

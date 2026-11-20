@@ -2,7 +2,7 @@
 // UE DUBAI CAMPUS — Room Portal Data Layer
 // ═══════════════════════════════════════════════════
 
-const ROOMS = [
+let ROOMS = [
   // Real rooms from the campus list (single floor)
   { id:'202',  name:'Lecture Theatre 202', floor:1, type:'Lecture Theatre', capacity:60, features:['Biggest room'], bookable:true },
   { id:'204',  name:'Auditorium 204',      floor:1, type:'Auditorium',      capacity:45, features:['Opens into 205'], bookable:true, mergeWith:'205' },
@@ -26,11 +26,11 @@ const ROOMS = [
 // maintenance: set to true via admin to block a room
 let ROOM_MAINTENANCE = {};
 
-// Admin-set room status overrides (persisted in localStorage)
+// Admin-set room status overrides (persisted in shared portal state)
 // Values: 'free' | 'occ' | 'event' | 'booked' | 'maintenance'  — '' / absent = auto
 let ROOM_STATUS_OVERRIDES = {};
 
-// Room photos uploaded by admin: { roomId: [dataURL, ...] } (persisted in localStorage)
+// Room photos uploaded by admin: { roomId: [dataURL, ...] } (persisted in shared portal state)
 let ROOM_PHOTOS = {};
 
 // Rooms that can be opened into one big room (movable wall)
@@ -207,58 +207,68 @@ function exportCSV(day){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// SHARED PERSISTENCE  (localStorage bridge between admin ↔ portal)
+// SHARED PERSISTENCE
 // ═══════════════════════════════════════════════════════════════════
-const _STORE_KEY = 'UE_PORTAL_v1';
+const _STORE_KEY = 'UE_PORTAL_v1'; // Legacy browser data imported on first admin login.
+let _sharedUpdatedAt = null;
 
-function saveAll(){
-  try{
-    localStorage.setItem(_STORE_KEY, JSON.stringify({
-      rm: ROOM_MAINTENANCE,
-      ro: ROOM_STATUS_OVERRIDES,
-      rp: ROOM_PHOTOS,
-      sc: SCHEDULE,
-      an: ANNOUNCEMENTS,
-      pr: PROFESSORS,
-      su: SUBSTITUTIONS,
-      ps: PORTAL_SETTINGS,
-      ni: _nextId,
-    }));
-  }catch(e){
-    console.warn('[UE] saveAll failed', e);
-    if(typeof showToast==='function') showToast('Storage full — remove some room photos');
-    return false;
-  }
+function getPortalState(){
+  return {
+    rm: ROOM_MAINTENANCE,
+    ro: ROOM_STATUS_OVERRIDES,
+    rp: ROOM_PHOTOS,
+    rooms: ROOMS,
+    sc: SCHEDULE,
+    an: ANNOUNCEMENTS,
+    pr: PROFESSORS,
+    su: SUBSTITUTIONS,
+    ps: PORTAL_SETTINGS,
+    ni: _nextId,
+  };
+}
+
+function applyPortalState(d){
+  if(d.rm){Object.keys(ROOM_MAINTENANCE).forEach(k=>delete ROOM_MAINTENANCE[k]);Object.assign(ROOM_MAINTENANCE,d.rm);}
+  if(d.ro){Object.keys(ROOM_STATUS_OVERRIDES).forEach(k=>delete ROOM_STATUS_OVERRIDES[k]);Object.assign(ROOM_STATUS_OVERRIDES,d.ro);}
+  if(d.rp){Object.keys(ROOM_PHOTOS).forEach(k=>delete ROOM_PHOTOS[k]);Object.assign(ROOM_PHOTOS,d.rp);}
+  if(Array.isArray(d.rooms)){ROOMS.length=0;ROOMS.push(...d.rooms);}
+  if(Array.isArray(d.sc)){SCHEDULE.length=0;SCHEDULE.push(...d.sc);}
+  if(Array.isArray(d.an)){ANNOUNCEMENTS.length=0;ANNOUNCEMENTS.push(...d.an);}
+  if(Array.isArray(d.su)){SUBSTITUTIONS.length=0;SUBSTITUTIONS.push(...d.su);}
+  if(Array.isArray(d.pr)){PROFESSORS.length=0;PROFESSORS.push(...d.pr);}
+  if(d.ps)Object.assign(PORTAL_SETTINGS,d.ps);
+  if(Number.isInteger(d.ni))_nextId=d.ni;
+}
+
+async function saveAll(section){
+  const response=await fetch(`/api/state?section=${encodeURIComponent(section)}`,{
+    method:'PUT',
+    credentials:'same-origin',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(getPortalState()),
+  });
+  const result=await response.json();
+  if(!response.ok)throw new Error(result.error||`Could not sync changes (${response.status})`);
   return true;
 }
 
-function loadAll(){
-  try{
-    const raw = localStorage.getItem(_STORE_KEY);
-    if(!raw) return;
-    const d = JSON.parse(raw);
-    // ROOM_MAINTENANCE – clear and re-fill the object in-place
-    if(d.rm){
-      Object.keys(ROOM_MAINTENANCE).forEach(k => delete ROOM_MAINTENANCE[k]);
-      Object.assign(ROOM_MAINTENANCE, d.rm);
-    }
-    // ROOM_STATUS_OVERRIDES
-    if(d.ro){
-      Object.keys(ROOM_STATUS_OVERRIDES).forEach(k => delete ROOM_STATUS_OVERRIDES[k]);
-      Object.assign(ROOM_STATUS_OVERRIDES, d.ro);
-    }
-    if(d.rp){
-      Object.keys(ROOM_PHOTOS).forEach(k => delete ROOM_PHOTOS[k]);
-      Object.assign(ROOM_PHOTOS, d.rp);
-    }
-    // Arrays – clear and re-fill in-place (avoids re-assignment)
-    if(Array.isArray(d.sc)){ SCHEDULE.length=0;      SCHEDULE.push(...d.sc); }
-    if(Array.isArray(d.an)){ ANNOUNCEMENTS.length=0;  ANNOUNCEMENTS.push(...d.an); }
-    if(Array.isArray(d.su)){ SUBSTITUTIONS.length=0; SUBSTITUTIONS.push(...d.su); }
-    if(Array.isArray(d.pr)){ PROFESSORS.length=0;     PROFESSORS.push(...d.pr); }
-    // Settings object – merge
-    if(d.ps) Object.assign(PORTAL_SETTINGS, d.ps);
-    // Next ID counter
-    if(d.ni) _nextId = d.ni;
-  }catch(e){ console.warn('[UE] loadAll failed', e); }
+async function loadAll(force){
+  const query=!force&&_sharedUpdatedAt?`?since=${encodeURIComponent(_sharedUpdatedAt)}`:'';
+  const response=await fetch(`/api/state${query}`,{credentials:'same-origin'});
+  const result=await response.json();
+  if(!response.ok)throw new Error(result.error||`Could not load shared data (${response.status})`);
+  if(result.notModified)return {found:true,legacy:false,notModified:true,updatedAt:_sharedUpdatedAt};
+  if(result.state){
+    applyPortalState(result.state);
+    _sharedUpdatedAt=result.updatedAt||null;
+    return {found:true,legacy:false,updatedAt:_sharedUpdatedAt};
+  }
+  _sharedUpdatedAt=null;
+  const raw=localStorage.getItem(_STORE_KEY);
+  if(raw){
+    const legacy=JSON.parse(raw);
+    applyPortalState(legacy);
+    return {found:false,legacy:true};
+  }
+  return {found:false,legacy:false};
 }
